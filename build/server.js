@@ -53052,20 +53052,26 @@ var makeCollectionLink = (collection) => ({
     }, null, 2)
   }
 });
-var makeBookmarkLink = (bookmark) => ({
-  type: "resource",
-  resource: {
-    uri: `mcp://raindrop/${bookmark._id}`,
-    mimeType: "application/json",
-    text: JSON.stringify({
-      _id: bookmark._id,
-      title: bookmark.title || "Untitled",
-      link: bookmark.link,
-      excerpt: bookmark.excerpt,
-      tags: bookmark.tags
-    }, null, 2)
+var makeBookmarkLink = (bookmark) => {
+  const data = {
+    _id: bookmark._id,
+    title: bookmark.title || "Untitled",
+    link: bookmark.link,
+    excerpt: bookmark.excerpt,
+    tags: bookmark.tags
+  };
+  if (bookmark.removed !== undefined) {
+    data.removed = bookmark.removed;
   }
-});
+  return {
+    type: "resource",
+    resource: {
+      uri: `mcp://raindrop/${bookmark._id}`,
+      mimeType: "application/json",
+      text: JSON.stringify(data, null, 2)
+    }
+  };
+};
 var setIfDefined = (target, key, value) => {
   if (value !== undefined) {
     target[key] = value;
@@ -56406,5 +56412,5 @@ export {
   activeSessions
 };
 
-//# debugId=01E7186A7048480B64756E2164756E21
+//# debugId=48E79DE144D3EC0C64756E2164756E21
 //# sourceMappingURL=server.js.map
