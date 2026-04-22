@@ -60,24 +60,26 @@ export const makeCollectionLink = (collection: any): McpContent => ({
   },
 });
 
-export const makeBookmarkLink = (bookmark: any): McpContent => ({
-  type: "resource",
-  resource: {
-    uri: `mcp://raindrop/${bookmark._id}`,
-    mimeType: "application/json",
-    text: JSON.stringify(
-      {
-        _id: bookmark._id,
-        title: bookmark.title || "Untitled",
-        link: bookmark.link,
-        excerpt: bookmark.excerpt,
-        tags: bookmark.tags,
-      },
-      null,
-      2,
-    ),
-  },
-});
+export const makeBookmarkLink = (bookmark: any): McpContent => {
+  const data: Record<string, unknown> = {
+    _id: bookmark._id,
+    title: bookmark.title || "Untitled",
+    link: bookmark.link,
+    excerpt: bookmark.excerpt,
+    tags: bookmark.tags,
+  };
+  if (bookmark.removed !== undefined) {
+    data.removed = bookmark.removed;
+  }
+  return {
+    type: "resource",
+    resource: {
+      uri: `mcp://raindrop/${bookmark._id}`,
+      mimeType: "application/json",
+      text: JSON.stringify(data, null, 2),
+    },
+  };
+};
 
 export const setIfDefined = (
   target: Record<string, unknown>,
