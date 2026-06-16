@@ -120,9 +120,9 @@ export class RaindropMCPService {
     };
   }
 
-  constructor() {
+  constructor(token?: string) {
     try {
-      this.raindropService = new RaindropService();
+      this.raindropService = new RaindropService(token);
       this.server = new McpServer({
         name: "raindrop-mcp",
         version: SERVER_VERSION,

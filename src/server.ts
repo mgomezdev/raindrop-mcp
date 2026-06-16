@@ -16,8 +16,9 @@ import { RaindropMCPService } from "./services/raindropmcp.service.js";
 import { createLogger } from "./utils/logger.js";
 config({ quiet: true }); // Load .env file
 
-const PORT = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT) : 3002;
+const PORT = parseInt(process.env.PORT || process.env.HTTP_PORT || "3002", 10);
 const logger = createLogger("http");
+const PUBLIC_URL = process.env.PUBLIC_URL;
 
 /**
  * Tracks active MCP sessions for monitoring and cleanup.
@@ -48,7 +49,9 @@ const app: { listen?: (port: number, cb?: () => void) => any } = {};
 const RAINDROP_CLIENT_SECRET = process.env.RAINDROP_CLIENT_SECRET;
 const RAINDROP_REDIRECT_URI =
   process.env.RAINDROP_REDIRECT_URI ||
-  `http://localhost:${PORT}/auth/raindrop/callback`;
+  (PUBLIC_URL
+    ? `${PUBLIC_URL.replace(/\/$/, "")}/auth/raindrop/callback`
+    : `http://localhost:${PORT}/auth/raindrop/callback`);
 
 const oauthClient = new AuthorizationCode({
   client: {
@@ -63,6 +66,19 @@ const oauthClient = new AuthorizationCode({
 });
 
 const transports: Record<string, StreamableHTTPServerTransport> = {};
+const sessionServices: Record<string, RaindropMCPService> = {};
+
+/**
+ * Extracts a bearer token from the Authorization header.
+ * Each connecting client supplies its own Raindrop token here — the server
+ * never falls back to a shared/env-configured token for HTTP sessions, so a
+ * leaked deployment URL can't be used to access someone else's Raindrop account.
+ */
+function extractBearerToken(authHeader: string | undefined): string | null {
+  if (!authHeader) return null;
+  const match = /^Bearer\s+(.+)$/i.exec(authHeader.trim());
+  return match ? match[1]!.trim() : null;
+}
 
 /**
  * DNS Rebinding Protection Helper
@@ -112,6 +128,13 @@ const server = http.createServer(async (req, res) => {
     // Add custom hosts from environment if configured
     if (process.env.ALLOWED_HOSTS) {
       allowedHosts.push(...process.env.ALLOWED_HOSTS.split(","));
+    }
+    if (PUBLIC_URL) {
+      try {
+        allowedHosts.push(new URL(PUBLIC_URL).hostname);
+      } catch {
+        logger.warn(`Ignoring invalid PUBLIC_URL: ${PUBLIC_URL}`);
+      }
     }
 
     const hostValidation = validateHostHeader(
@@ -272,11 +295,36 @@ const server = http.createServer(async (req, res) => {
           req.method === "POST" &&
           isInitializeRequest(body)
         ) {
+          const token = extractBearerToken(
+            req.headers.authorization as string | undefined,
+          );
+          if (!token) {
+            logger.warn(
+              "Rejected MCP session: missing Authorization bearer token",
+            );
+            res.writeHead(401, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                jsonrpc: "2.0",
+                error: {
+                  code: -32001,
+                  message:
+                    "Unauthorized: provide your Raindrop access token via 'Authorization: Bearer <token>'",
+                },
+                id: null,
+              }),
+            );
+            return;
+          }
+
           logger.info("Creating new optimized Streamable HTTP session");
+          const sessionRaindropMCP = new RaindropMCPService(token);
+          const sessionMcpServer = sessionRaindropMCP.getServer();
           const streamTransport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
             onsessioninitialized: (sessionId) => {
               transports[sessionId] = transport;
+              sessionServices[sessionId] = sessionRaindropMCP;
               sessionMetadata.set(sessionId, {
                 id: sessionId,
                 created: new Date().toISOString(),
@@ -291,8 +339,11 @@ const server = http.createServer(async (req, res) => {
           transport = streamTransport;
           transport.onclose = () => {
             if (transport.sessionId) {
+              const closedService = sessionServices[transport.sessionId];
               delete transports[transport.sessionId];
+              delete sessionServices[transport.sessionId];
               sessionMetadata.delete(transport.sessionId);
+              void closedService?.cleanup();
               logger.info(
                 `Optimized Streamable HTTP session cleaned up: ${transport.sessionId}`,
               );
@@ -302,7 +353,7 @@ const server = http.createServer(async (req, res) => {
             logger.error("Streamable HTTP transport error", error);
           };
 
-          await mcpServer.connect(transport as any);
+          await sessionMcpServer.connect(transport as any);
         } else {
           logger.warn(
             "Invalid optimized MCP request: missing session ID or invalid initialization",
@@ -357,11 +408,6 @@ const server = http.createServer(async (req, res) => {
 
 // Provide a minimal listen function for compatibility
 app.listen = (port: number, cb?: () => void) => server.listen(port, cb);
-
-// Instantiate the shared MCP service and get the server instance
-const raindropMCP = new RaindropMCPService();
-const mcpServer = raindropMCP.getServer();
-const _cleanup = raindropMCP.cleanup.bind(raindropMCP);
 
 /**
  * MCP protocol endpoint with session management and transport handling.

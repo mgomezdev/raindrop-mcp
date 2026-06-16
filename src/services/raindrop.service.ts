@@ -68,7 +68,9 @@ export default class RaindropService {
       onResponse({ response }) {
         if (!response.ok) {
           if (response.status === 401)
-            throw new AuthError("Unauthorized: check RAINDROP_ACCESS_TOKEN");
+            throw new AuthError(
+              "Unauthorized: check your Raindrop access token",
+            );
           if (response.status === 429) {
             const retryAfterMs =
               RaindropService.parseRetryAfterMs(

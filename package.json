@@ -30,6 +30,7 @@
     "build": "bun build --target=node --format=esm --bundle --sourcemap --outdir=build ./src/index.ts ./src/server.ts",
     "start:prod": "bun run build/index.js",
     "start:http": "bun run src/server.ts",
+    "start": "bun run build && bun run build/server.js",
     "clean": "rm -rf build",
     "bun:update": "bun update",
     "update:deps": "npx npm-check-updates -u && bun install",
