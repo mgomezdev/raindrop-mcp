@@ -16,7 +16,7 @@ import { RaindropMCPService } from "./services/raindropmcp.service.js";
 import { createLogger } from "./utils/logger.js";
 config({ quiet: true }); // Load .env file
 
-const PORT = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT) : 3002;
+const PORT = parseInt(process.env.PORT || process.env.HTTP_PORT || "3002");
 const logger = createLogger("http");
 
 /**
@@ -103,36 +103,37 @@ function validateHostHeader(
 // Create native HTTP server
 const server = http.createServer(async (req, res) => {
   try {
-    // DNS Rebinding Protection - validate Host header
-    const allowedHosts = [
-      "localhost",
-      "127.0.0.1",
-      "::1", // IPv6 localhost
-    ];
-    // Add custom hosts from environment if configured
-    if (process.env.ALLOWED_HOSTS) {
-      allowedHosts.push(...process.env.ALLOWED_HOSTS.split(","));
-    }
+    // DNS Rebinding Protection - only enforced in non-production environments
+    if (process.env.NODE_ENV !== "production") {
+      const allowedHosts = [
+        "localhost",
+        "127.0.0.1",
+        "::1", // IPv6 localhost
+      ];
+      if (process.env.ALLOWED_HOSTS) {
+        allowedHosts.push(...process.env.ALLOWED_HOSTS.split(","));
+      }
 
-    const hostValidation = validateHostHeader(
-      req.headers.host ?? "",
-      allowedHosts,
-    );
-
-    if (!hostValidation.ok) {
-      logger.warn(`DNS rebinding attempt detected: ${hostValidation.message}`);
-      res.writeHead(403, { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify({
-          jsonrpc: "2.0",
-          error: {
-            code: -32603,
-            message: hostValidation.message,
-          },
-          id: null,
-        }),
+      const hostValidation = validateHostHeader(
+        req.headers.host ?? "",
+        allowedHosts,
       );
-      return;
+
+      if (!hostValidation.ok) {
+        logger.warn(`DNS rebinding attempt detected: ${hostValidation.message}`);
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            error: {
+              code: -32603,
+              message: hostValidation.message,
+            },
+            id: null,
+          }),
+        );
+        return;
+      }
     }
 
     const url = parseUrl(req.url || "", true);

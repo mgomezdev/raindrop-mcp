@@ -26,6 +26,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "vitest run tests/mcpjam.integration.test.ts",
     "auth:check": "node scripts/auth-check.mjs",
+    "start": "NODE_ENV=production node build/server.js",
     "run": "bun run build/index.js",
     "build": "bun build --target=node --format=esm --bundle --sourcemap --outdir=build ./src/index.ts ./src/server.ts",
     "start:prod": "bun run build/index.js",
