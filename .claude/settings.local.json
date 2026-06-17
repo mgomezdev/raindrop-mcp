@@ -23,7 +23,9 @@
       "Bash(mv:*)",
       "Bash(bun test:*)",
       "Bash(bun:*)",
-      "mcp__4f8d4521-e07a-4213-93a1-6427dcf4f1f2__redeploy"
+      "mcp__4f8d4521-e07a-4213-93a1-6427dcf4f1f2__redeploy",
+      "mcp__4f8d4521-e07a-4213-93a1-6427dcf4f1f2__list_deployments",
+      "mcp__4f8d4521-e07a-4213-93a1-6427dcf4f1f2__get_deployment_runtime_logs"
     ],
     "deny": []
   }
