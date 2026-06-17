@@ -154,6 +154,72 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Routing
+
+    // OAuth 2.0 Authorization Server Metadata (RFC 8414 / MCP auth spec)
+    if (
+      url.pathname === "/.well-known/oauth-authorization-server" &&
+      req.method === "GET"
+    ) {
+      const scheme =
+        req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+      const host = req.headers.host || `localhost:${PORT}`;
+      const baseUrl = `${scheme}://${host}`;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          issuer: baseUrl,
+          token_endpoint: `${baseUrl}/oauth/token`,
+          grant_types_supported: ["client_credentials"],
+          token_endpoint_auth_methods_supported: [
+            "client_secret_basic",
+            "client_secret_post",
+          ],
+          scopes_supported: ["mcp"],
+        }),
+      );
+      return;
+    }
+
+    // OAuth 2.0 Token Endpoint — client_secret IS the Raindrop access token
+    if (url.pathname === "/oauth/token" && req.method === "POST") {
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of req)
+        chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+      const rawBody = Buffer.concat(chunks).toString("utf8");
+      const params = new URLSearchParams(rawBody);
+      const grantType = params.get("grant_type");
+
+      // Accept client_secret from POST body or HTTP Basic auth header
+      let clientSecret = params.get("client_secret");
+      const basicAuth = req.headers["authorization"];
+      if (
+        !clientSecret &&
+        basicAuth &&
+        basicAuth.toLowerCase().startsWith("basic ")
+      ) {
+        const decoded = Buffer.from(basicAuth.slice(6), "base64").toString(
+          "utf8",
+        );
+        clientSecret = decoded.split(":")[1] || null;
+      }
+
+      if (grantType !== "client_credentials" || !clientSecret) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid_request" }));
+        return;
+      }
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          access_token: clientSecret,
+          token_type: "Bearer",
+          expires_in: 86400,
+        }),
+      );
+      return;
+    }
+
     if (url.pathname === "/auth/raindrop" && req.method === "GET") {
       if (!process.env.RAINDROP_CLIENT_ID) {
         res.writeHead(500, { "Content-Type": "text/plain" });
