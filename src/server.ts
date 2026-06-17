@@ -103,15 +103,15 @@ function validateHostHeader(
 // Create native HTTP server
 const server = http.createServer(async (req, res) => {
   try {
-    // DNS Rebinding Protection - only enforced in non-production environments
-    if (process.env.NODE_ENV !== "production") {
+    // DNS Rebinding Protection - only enforced when explicitly enabled (not needed for cloud deployments)
+    if (process.env["ENABLE_HOST_CHECK"]) {
       const allowedHosts = [
         "localhost",
         "127.0.0.1",
         "::1", // IPv6 localhost
       ];
-      if (process.env.ALLOWED_HOSTS) {
-        allowedHosts.push(...process.env.ALLOWED_HOSTS.split(","));
+      if (process.env["ALLOWED_HOSTS"]) {
+        allowedHosts.push(...process.env["ALLOWED_HOSTS"].split(","));
       }
 
       const hostValidation = validateHostHeader(
