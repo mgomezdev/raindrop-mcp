@@ -403,11 +403,26 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const raindropRedirectUri = raindropCallbackUri(req);
-        const tokenResult = await oauthClient.getToken({
-          code,
-          redirect_uri: raindropRedirectUri,
-        } as any);
-        const raindropToken = tokenResult.token.access_token as string;
+        // Use fetch directly — simple-oauth2 rejects Raindrop's response
+        // because Raindrop doesn't return Content-Type: application/json
+        const tokenRes = await fetch("https://raindrop.io/oauth/access_token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            grant_type: "authorization_code",
+            code,
+            client_id: process.env.RAINDROP_CLIENT_ID,
+            client_secret: RAINDROP_CLIENT_SECRET,
+            redirect_uri: raindropRedirectUri,
+          }),
+        });
+        const tokenData = (await tokenRes.json()) as any;
+        if (!tokenRes.ok || !tokenData.access_token) {
+          throw new Error(
+            tokenData.error || `Token exchange failed: ${tokenRes.status}`,
+          );
+        }
+        const raindropToken = tokenData.access_token as string;
 
         // If this was triggered via /oauth/authorize, issue our auth code to caller
         const session = sessionId ? pendingOAuthSessions.get(sessionId) : null;
