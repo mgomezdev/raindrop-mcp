@@ -120,7 +120,9 @@ const server = http.createServer(async (req, res) => {
       );
 
       if (!hostValidation.ok) {
-        logger.warn(`DNS rebinding attempt detected: ${hostValidation.message}`);
+        logger.warn(
+          `DNS rebinding attempt detected: ${hostValidation.message}`,
+        );
         res.writeHead(403, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
@@ -273,6 +275,17 @@ const server = http.createServer(async (req, res) => {
           req.method === "POST" &&
           isInitializeRequest(body)
         ) {
+          // Extract bearer token from Authorization header for per-session isolation
+          const authHeader = req.headers["authorization"];
+          const bearerToken =
+            typeof authHeader === "string" &&
+            authHeader.toLowerCase().startsWith("bearer ")
+              ? authHeader.slice(7).trim()
+              : undefined;
+
+          const sessionService = new RaindropMCPService(bearerToken);
+          const sessionMcpServer = sessionService.getServer();
+
           logger.info("Creating new optimized Streamable HTTP session");
           const streamTransport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
@@ -298,12 +311,13 @@ const server = http.createServer(async (req, res) => {
                 `Optimized Streamable HTTP session cleaned up: ${transport.sessionId}`,
               );
             }
+            sessionService.cleanup().catch(() => {});
           };
           transport.onerror = (error: Error) => {
             logger.error("Streamable HTTP transport error", error);
           };
 
-          await mcpServer.connect(transport as any);
+          await sessionMcpServer.connect(transport as any);
         } else {
           logger.warn(
             "Invalid optimized MCP request: missing session ID or invalid initialization",
@@ -359,17 +373,6 @@ const server = http.createServer(async (req, res) => {
 // Provide a minimal listen function for compatibility
 app.listen = (port: number, cb?: () => void) => server.listen(port, cb);
 
-// Instantiate the shared MCP service and get the server instance
-const raindropMCP = new RaindropMCPService();
-const mcpServer = raindropMCP.getServer();
-const _cleanup = raindropMCP.cleanup.bind(raindropMCP);
-
-/**
- * MCP protocol endpoint with session management and transport handling.
- */
-/**
- * Starts the MCP HTTP server and logs endpoints.
- */
 const serverInstance = server.listen(PORT, () => {
   logger.info(`Raindrop MCP HTTP Server running on port ${PORT}`);
   logger.info(
