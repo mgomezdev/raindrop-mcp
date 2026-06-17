@@ -60,6 +60,10 @@ const oauthClient = new AuthorizationCode({
     authorizePath: "/oauth/authorize",
     tokenPath: "/oauth/access_token",
   },
+  options: {
+    bodyFormat: "json",
+    authorizationMethod: "body",
+  },
 });
 
 const transports: Record<string, StreamableHTTPServerTransport> = {};
