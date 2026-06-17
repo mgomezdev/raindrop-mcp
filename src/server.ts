@@ -89,10 +89,23 @@ const oauthAuthCodes = new Map<
 const oauthAccessTokens = new Map<string, string>(); // our token → raindrop token
 
 function serverBaseUrl(req: http.IncomingMessage): string {
-  const scheme =
-    req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
-  const host = req.headers.host || `localhost:${PORT}`;
+  const rawProto = req.headers["x-forwarded-proto"];
+  const protoStr = (Array.isArray(rawProto) ? rawProto[0] : rawProto) ?? "";
+  const scheme = (protoStr.split(",")[0] ?? "").trim() || "http";
+  const host =
+    (req.headers["x-forwarded-host"] as string | undefined)
+      ?.split(",")[0]
+      ?.trim() ||
+    req.headers.host ||
+    `localhost:${PORT}`;
   return `${scheme}://${host}`;
+}
+
+function raindropCallbackUri(req: http.IncomingMessage): string {
+  return (
+    process.env["RAINDROP_REDIRECT_URI"] ||
+    `${serverBaseUrl(req)}/auth/raindrop/callback`
+  );
 }
 
 /**
@@ -258,8 +271,7 @@ const server = http.createServer(async (req, res) => {
         codeChallengeMethod,
       });
 
-      const base = serverBaseUrl(req);
-      const raindropRedirectUri = `${base}/auth/raindrop/callback`;
+      const raindropRedirectUri = raindropCallbackUri(req);
       const authorizationUri = oauthClient.authorizeURL({
         redirect_uri: raindropRedirectUri,
         scope: "read write",
@@ -386,8 +398,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       try {
-        const base = serverBaseUrl(req);
-        const raindropRedirectUri = `${base}/auth/raindrop/callback`;
+        const raindropRedirectUri = raindropCallbackUri(req);
         const tokenResult = await oauthClient.getToken({
           code,
           redirect_uri: raindropRedirectUri,
@@ -433,9 +444,8 @@ const server = http.createServer(async (req, res) => {
         res.end("RAINDROP_CLIENT_ID not set");
         return;
       }
-      const base = serverBaseUrl(req);
       const authorizationUri = oauthClient.authorizeURL({
-        redirect_uri: `${base}/auth/raindrop/callback`,
+        redirect_uri: raindropCallbackUri(req),
         scope: "read write",
       });
       res.writeHead(302, { Location: authorizationUri });
