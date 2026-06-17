@@ -164,7 +164,7 @@ const server = http.createServer(async (req, res) => {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, MCP-Session-Id",
+      "Content-Type, MCP-Session-Id, Authorization",
     );
 
     if (req.method === "OPTIONS") {
@@ -174,6 +174,24 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Routing
+
+    // OAuth 2.0 Protected Resource Metadata (RFC 9728) — tells clients where the auth server is
+    if (
+      url.pathname === "/.well-known/oauth-protected-resource" &&
+      req.method === "GET"
+    ) {
+      const base = serverBaseUrl(req);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          resource: `${base}/mcp`,
+          authorization_servers: [`${base}`],
+          scopes_supported: ["mcp"],
+          bearer_methods_supported: ["header"],
+        }),
+      );
+      return;
+    }
 
     // OAuth 2.0 Authorization Server Metadata (RFC 8414 / MCP auth spec)
     if (
@@ -412,6 +430,28 @@ const server = http.createServer(async (req, res) => {
       try {
         const sessionId = req.headers["mcp-session-id"] as string | undefined;
         let transport: StreamableHTTPServerTransport;
+
+        // Require Authorization header on new sessions when no env-var fallback is set
+        const hasEnvToken = !!process.env["RAINDROP_ACCESS_TOKEN"];
+        const hasAuthHeader = !!req.headers["authorization"];
+        if (!sessionId && !hasAuthHeader && !hasEnvToken) {
+          const base = serverBaseUrl(req);
+          res.writeHead(401, {
+            "Content-Type": "application/json",
+            "WWW-Authenticate": `Bearer realm="${base}", resource_metadata="${base}/.well-known/oauth-protected-resource"`,
+          });
+          res.end(
+            JSON.stringify({
+              jsonrpc: "2.0",
+              error: {
+                code: -32000,
+                message: "Unauthorized: authentication required",
+              },
+              id: null,
+            }),
+          );
+          return;
+        }
 
         if (sessionId && transports[sessionId]) {
           transport = transports[sessionId];
