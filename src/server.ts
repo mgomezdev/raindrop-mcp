@@ -64,6 +64,26 @@ const oauthClient = new AuthorizationCode({
 
 const transports: Record<string, StreamableHTTPServerTransport> = {};
 
+// In-memory OAuth stores (acceptable for a personal single-user server)
+const pendingOAuthSessions = new Map<
+  string,
+  {
+    redirectUri: string;
+    clientState?: string;
+    codeChallenge?: string;
+    codeChallengeMethod?: string;
+  }
+>();
+const oauthAuthCodes = new Map<string, string>(); // our code → raindrop token
+const oauthAccessTokens = new Map<string, string>(); // our token → raindrop token
+
+function serverBaseUrl(req: http.IncomingMessage): string {
+  const scheme =
+    req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+  const host = req.headers.host || `localhost:${PORT}`;
+  return `${scheme}://${host}`;
+}
+
 /**
  * DNS Rebinding Protection Helper
  * Validates Host header against an allowlist of safe hostnames.
@@ -160,27 +180,66 @@ const server = http.createServer(async (req, res) => {
       url.pathname === "/.well-known/oauth-authorization-server" &&
       req.method === "GET"
     ) {
-      const scheme =
-        req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
-      const host = req.headers.host || `localhost:${PORT}`;
-      const baseUrl = `${scheme}://${host}`;
+      const base = serverBaseUrl(req);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          issuer: baseUrl,
-          token_endpoint: `${baseUrl}/oauth/token`,
-          grant_types_supported: ["client_credentials"],
-          token_endpoint_auth_methods_supported: [
-            "client_secret_basic",
-            "client_secret_post",
-          ],
+          issuer: base,
+          authorization_endpoint: `${base}/oauth/authorize`,
+          token_endpoint: `${base}/oauth/token`,
+          grant_types_supported: ["authorization_code"],
+          code_challenge_methods_supported: ["S256", "plain"],
+          response_types_supported: ["code"],
           scopes_supported: ["mcp"],
         }),
       );
       return;
     }
 
-    // OAuth 2.0 Token Endpoint — client_secret IS the Raindrop access token
+    // OAuth 2.0 Authorization Endpoint
+    // Stores client redirect info, then forwards user to Raindrop OAuth
+    if (url.pathname === "/oauth/authorize" && req.method === "GET") {
+      if (!process.env.RAINDROP_CLIENT_ID) {
+        res.writeHead(500, { "Content-Type": "text/plain" });
+        res.end(
+          "RAINDROP_CLIENT_ID env var not set — configure it in manufact",
+        );
+        return;
+      }
+      const redirectUri = url.query["redirect_uri"] as string | undefined;
+      const clientState = url.query["state"] as string | undefined;
+      const codeChallenge = url.query["code_challenge"] as string | undefined;
+      const codeChallengeMethod = url.query["code_challenge_method"] as
+        | string
+        | undefined;
+
+      if (!redirectUri) {
+        res.writeHead(400, { "Content-Type": "text/plain" });
+        res.end("Missing redirect_uri");
+        return;
+      }
+
+      const sessionId = randomUUID();
+      pendingOAuthSessions.set(sessionId, {
+        redirectUri,
+        clientState,
+        codeChallenge,
+        codeChallengeMethod,
+      });
+
+      const base = serverBaseUrl(req);
+      const raindropRedirectUri = `${base}/auth/raindrop/callback`;
+      const authorizationUri = oauthClient.authorizeURL({
+        redirect_uri: raindropRedirectUri,
+        scope: "read write",
+        state: sessionId,
+      });
+      res.writeHead(302, { Location: authorizationUri });
+      res.end();
+      return;
+    }
+
+    // OAuth 2.0 Token Endpoint
     if (url.pathname === "/oauth/token" && req.method === "POST") {
       const chunks: Uint8Array[] = [];
       for await (const chunk of req)
@@ -188,31 +247,29 @@ const server = http.createServer(async (req, res) => {
       const rawBody = Buffer.concat(chunks).toString("utf8");
       const params = new URLSearchParams(rawBody);
       const grantType = params.get("grant_type");
+      const code = params.get("code");
 
-      // Accept client_secret from POST body or HTTP Basic auth header
-      let clientSecret = params.get("client_secret");
-      const basicAuth = req.headers["authorization"];
-      if (
-        !clientSecret &&
-        basicAuth &&
-        basicAuth.toLowerCase().startsWith("basic ")
-      ) {
-        const decoded = Buffer.from(basicAuth.slice(6), "base64").toString(
-          "utf8",
-        );
-        clientSecret = decoded.split(":")[1] || null;
-      }
-
-      if (grantType !== "client_credentials" || !clientSecret) {
+      if (grantType !== "authorization_code" || !code) {
         res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "invalid_request" }));
+        res.end(JSON.stringify({ error: "invalid_grant" }));
         return;
       }
+
+      const raindropToken = oauthAuthCodes.get(code);
+      if (!raindropToken) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid_grant" }));
+        return;
+      }
+      oauthAuthCodes.delete(code); // single-use
+
+      const accessToken = randomUUID();
+      oauthAccessTokens.set(accessToken, raindropToken);
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          access_token: clientSecret,
+          access_token: accessToken,
           token_type: "Bearer",
           expires_in: 86400,
         }),
@@ -220,35 +277,41 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (url.pathname === "/auth/raindrop" && req.method === "GET") {
-      if (!process.env.RAINDROP_CLIENT_ID) {
-        res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end("RAINDROP_CLIENT_ID not set");
-        return;
-      }
-      const authorizationUri = oauthClient.authorizeURL({
-        redirect_uri: RAINDROP_REDIRECT_URI,
-        scope: "read write",
-      });
-      res.writeHead(302, { Location: authorizationUri });
-      res.end();
-      return;
-    }
-
+    // Raindrop OAuth callback — exchange Raindrop code, then redirect back to claude.ai
     if (url.pathname === "/auth/raindrop/callback" && req.method === "GET") {
       const code = url.query.code as string | undefined;
+      const sessionId = url.query.state as string | undefined;
       if (!code) {
         res.writeHead(400, { "Content-Type": "text/plain" });
         res.end("Missing code parameter");
         return;
       }
       try {
-        const tokenParams = { code, redirect_uri: RAINDROP_REDIRECT_URI };
-        const accessToken = await oauthClient.getToken(tokenParams as any);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(
-          JSON.stringify({ access_token: accessToken.token.access_token }),
-        );
+        const base = serverBaseUrl(req);
+        const raindropRedirectUri = `${base}/auth/raindrop/callback`;
+        const tokenResult = await oauthClient.getToken({
+          code,
+          redirect_uri: raindropRedirectUri,
+        } as any);
+        const raindropToken = tokenResult.token.access_token as string;
+
+        // If this was triggered via /oauth/authorize, issue our auth code to caller
+        const session = sessionId ? pendingOAuthSessions.get(sessionId) : null;
+        if (session) {
+          pendingOAuthSessions.delete(sessionId!);
+          const authCode = randomUUID();
+          oauthAuthCodes.set(authCode, raindropToken);
+          const callbackUrl = new URL(session.redirectUri);
+          callbackUrl.searchParams.set("code", authCode);
+          if (session.clientState)
+            callbackUrl.searchParams.set("state", session.clientState);
+          res.writeHead(302, { Location: callbackUrl.toString() });
+          res.end();
+        } else {
+          // Standalone use: just show the token
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ access_token: raindropToken }));
+        }
       } catch (error: any) {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(
@@ -257,6 +320,23 @@ const server = http.createServer(async (req, res) => {
           }),
         );
       }
+      return;
+    }
+
+    // Legacy redirect for manual OAuth initiation
+    if (url.pathname === "/auth/raindrop" && req.method === "GET") {
+      if (!process.env.RAINDROP_CLIENT_ID) {
+        res.writeHead(500, { "Content-Type": "text/plain" });
+        res.end("RAINDROP_CLIENT_ID not set");
+        return;
+      }
+      const base = serverBaseUrl(req);
+      const authorizationUri = oauthClient.authorizeURL({
+        redirect_uri: `${base}/auth/raindrop/callback`,
+        scope: "read write",
+      });
+      res.writeHead(302, { Location: authorizationUri });
+      res.end();
       return;
     }
 
@@ -341,13 +421,18 @@ const server = http.createServer(async (req, res) => {
           req.method === "POST" &&
           isInitializeRequest(body)
         ) {
-          // Extract bearer token from Authorization header for per-session isolation
+          // Extract bearer token from Authorization header for per-session isolation.
+          // If the token is one our OAuth server issued, resolve it to the underlying
+          // Raindrop token; otherwise use it directly (personal access token flow).
           const authHeader = req.headers["authorization"];
-          const bearerToken =
+          const rawBearer =
             typeof authHeader === "string" &&
             authHeader.toLowerCase().startsWith("bearer ")
               ? authHeader.slice(7).trim()
               : undefined;
+          const bearerToken = rawBearer
+            ? (oauthAccessTokens.get(rawBearer) ?? rawBearer)
+            : undefined;
 
           const sessionService = new RaindropMCPService(bearerToken);
           const sessionMcpServer = sessionService.getServer();
