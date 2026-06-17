@@ -3,6 +3,7 @@ var __create = Object.create;
 var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 function __accessProp(key) {
   return this[key];
@@ -29,6 +30,23 @@ var __toESM = (mod, isNodeMode, target) => {
     cache.set(mod, to);
   return to;
 };
+var __toCommonJS = (from) => {
+  var entry = (__moduleCache ??= new WeakMap).get(from), desc;
+  if (entry)
+    return entry;
+  entry = __defProp({}, "__esModule", { value: true });
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (var key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(entry, key))
+        __defProp(entry, key, {
+          get: __accessProp.bind(from, key),
+          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+  }
+  __moduleCache.set(from, entry);
+  return entry;
+};
+var __moduleCache;
 var __commonJS = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
 var __returnValue = (v) => v;
 function __exportSetter(name, newValue) {
@@ -43,7 +61,74 @@ var __export = (target, all) => {
       set: __exportSetter.bind(all, name)
     });
 };
+var __esm = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
 var __require = /* @__PURE__ */ createRequire(import.meta.url);
+
+// node_modules/dotenv/package.json
+var require_package = __commonJS((exports, module) => {
+  module.exports = {
+    name: "dotenv",
+    version: "17.3.1",
+    description: "Loads environment variables from .env file",
+    main: "lib/main.js",
+    types: "lib/main.d.ts",
+    exports: {
+      ".": {
+        types: "./lib/main.d.ts",
+        require: "./lib/main.js",
+        default: "./lib/main.js"
+      },
+      "./config": "./config.js",
+      "./config.js": "./config.js",
+      "./lib/env-options": "./lib/env-options.js",
+      "./lib/env-options.js": "./lib/env-options.js",
+      "./lib/cli-options": "./lib/cli-options.js",
+      "./lib/cli-options.js": "./lib/cli-options.js",
+      "./package.json": "./package.json"
+    },
+    scripts: {
+      "dts-check": "tsc --project tests/types/tsconfig.json",
+      lint: "standard",
+      pretest: "npm run lint && npm run dts-check",
+      test: "tap run tests/**/*.js --allow-empty-coverage --disable-coverage --timeout=60000",
+      "test:coverage": "tap run tests/**/*.js --show-full-coverage --timeout=60000 --coverage-report=text --coverage-report=lcov",
+      prerelease: "npm test",
+      release: "standard-version"
+    },
+    repository: {
+      type: "git",
+      url: "git://github.com/motdotla/dotenv.git"
+    },
+    homepage: "https://github.com/motdotla/dotenv#readme",
+    funding: "https://dotenvx.com",
+    keywords: [
+      "dotenv",
+      "env",
+      ".env",
+      "environment",
+      "variables",
+      "config",
+      "settings"
+    ],
+    readmeFilename: "README.md",
+    license: "BSD-2-Clause",
+    devDependencies: {
+      "@types/node": "^18.11.3",
+      decache: "^4.6.2",
+      sinon: "^14.0.1",
+      standard: "^17.0.0",
+      "standard-version": "^9.5.0",
+      tap: "^19.2.0",
+      typescript: "^4.8.4"
+    },
+    engines: {
+      node: ">=12"
+    },
+    browser: {
+      fs: false
+    }
+  };
+});
 
 // node_modules/dotenv/lib/main.js
 var require_main = __commonJS((exports, module) => {
@@ -51,15 +136,22 @@ var require_main = __commonJS((exports, module) => {
   var path = __require("path");
   var os = __require("os");
   var crypto3 = __require("crypto");
+  var packageJson = require_package();
+  var version2 = packageJson.version;
   var TIPS = [
-    "◈ encrypted .env [www.dotenvx.com]",
-    "◈ secrets for agents [www.dotenvx.com]",
-    "⌁ auth for agents [www.vestauth.com]",
-    "⌘ custom filepath { path: '/custom/path/.env' }",
-    "⌘ enable debugging { debug: true }",
-    "⌘ override existing { override: true }",
-    "⌘ suppress logs { quiet: true }",
-    "⌘ multiple files { path: ['.env.local', '.env'] }"
+    "\uD83D\uDD10 encrypt with Dotenvx: https://dotenvx.com",
+    "\uD83D\uDD10 prevent committing .env to code: https://dotenvx.com/precommit",
+    "\uD83D\uDD10 prevent building .env in docker: https://dotenvx.com/prebuild",
+    "\uD83E\uDD16 agentic secret storage: https://dotenvx.com/as2",
+    "⚡️ secrets for agents: https://dotenvx.com/as2",
+    "\uD83D\uDEE1️ auth for agents: https://vestauth.com",
+    "\uD83D\uDEE0️  run anywhere with `dotenvx run -- yourcommand`",
+    "⚙️  specify custom .env file path with { path: '/custom/path/.env' }",
+    "⚙️  enable debug logging with { debug: true }",
+    "⚙️  override existing env vars with { override: true }",
+    "⚙️  suppress all logs with { quiet: true }",
+    "⚙️  write to custom object with { processEnv: myObject }",
+    "⚙️  load multiple .env files with { path: ['.env.local', '.env'] }"
   ];
   function _getRandomTip() {
     return TIPS[Math.floor(Math.random() * TIPS.length)];
@@ -126,13 +218,13 @@ var require_main = __commonJS((exports, module) => {
     return DotenvModule.parse(decrypted);
   }
   function _warn(message) {
-    console.error(`⚠ ${message}`);
+    console.error(`[dotenv@${version2}][WARN] ${message}`);
   }
   function _debug(message) {
-    console.log(`┆ ${message}`);
+    console.log(`[dotenv@${version2}][DEBUG] ${message}`);
   }
   function _log(message) {
-    console.log(`◇ ${message}`);
+    console.log(`[dotenv@${version2}] ${message}`);
   }
   function _dotenvKey(options) {
     if (options && options.DOTENV_KEY && options.DOTENV_KEY.length > 0) {
@@ -203,7 +295,7 @@ var require_main = __commonJS((exports, module) => {
     const debug = parseBoolean(process.env.DOTENV_CONFIG_DEBUG || options && options.debug);
     const quiet = parseBoolean(process.env.DOTENV_CONFIG_QUIET || options && options.quiet);
     if (debug || !quiet) {
-      _log("loading env from encrypted .env.vault");
+      _log("Loading env from encrypted .env.vault");
     }
     const parsed = DotenvModule._parseVault(options);
     let processEnv = process.env;
@@ -226,7 +318,7 @@ var require_main = __commonJS((exports, module) => {
       encoding = options.encoding;
     } else {
       if (debug) {
-        _debug("no encoding is specified (UTF-8 is used by default)");
+        _debug("No encoding is specified. UTF-8 is used by default");
       }
     }
     let optionPaths = [dotenvPath];
@@ -248,7 +340,7 @@ var require_main = __commonJS((exports, module) => {
         DotenvModule.populate(parsedAll, parsed, options);
       } catch (e) {
         if (debug) {
-          _debug(`failed to load ${path2} ${e.message}`);
+          _debug(`Failed to load ${path2} ${e.message}`);
         }
         lastError = e;
       }
@@ -265,12 +357,12 @@ var require_main = __commonJS((exports, module) => {
           shortPaths.push(relative);
         } catch (e) {
           if (debug) {
-            _debug(`failed to load ${filePath} ${e.message}`);
+            _debug(`Failed to load ${filePath} ${e.message}`);
           }
           lastError = e;
         }
       }
-      _log(`injected env (${keysCount}) from ${shortPaths.join(",")} ${dim(`// tip: ${_getRandomTip()}`)}`);
+      _log(`injecting env (${keysCount}) from ${shortPaths.join(",")} ${dim(`-- tip: ${_getRandomTip()}`)}`);
     }
     if (lastError) {
       return { parsed: parsedAll, error: lastError };
@@ -284,7 +376,7 @@ var require_main = __commonJS((exports, module) => {
     }
     const vaultPath = _vaultPath(options);
     if (!vaultPath) {
-      _warn(`you set DOTENV_KEY but you are missing a .env.vault file at ${vaultPath}`);
+      _warn(`You set DOTENV_KEY but you are missing a .env.vault file at ${vaultPath}. Did you forget to build it?`);
       return DotenvModule.configDotenv(options);
     }
     return DotenvModule._configVault(options);
@@ -633,7 +725,7 @@ var require_clone = __commonJS((exports, module) => {
 });
 
 // node_modules/joi/package.json
-var require_package = __commonJS((exports, module) => {
+var require_package2 = __commonJS((exports, module) => {
   module.exports = {
     name: "joi",
     description: "Object schema validation",
@@ -2288,7 +2380,7 @@ var require_messages = __commonJS((exports) => {
 var require_common = __commonJS((exports) => {
   var Assert = require_assert();
   var AssertError = require_error();
-  var Pkg = require_package();
+  var Pkg = require_package2();
   var Messages;
   var Schemas;
   var internals = {
@@ -12999,7 +13091,7 @@ var require_ms = __commonJS((exports, module) => {
   }
 });
 
-// node_modules/debug/src/common.js
+// node_modules/simple-oauth2/node_modules/debug/src/common.js
 var require_common2 = __commonJS((exports, module) => {
   function setup(env) {
     createDebug.debug = createDebug;
@@ -13174,7 +13266,7 @@ var require_common2 = __commonJS((exports, module) => {
   module.exports = setup;
 });
 
-// node_modules/debug/src/browser.js
+// node_modules/simple-oauth2/node_modules/debug/src/browser.js
 var require_browser = __commonJS((exports, module) => {
   exports.formatArgs = formatArgs;
   exports.save = save;
@@ -13334,118 +13426,156 @@ var require_browser = __commonJS((exports, module) => {
   };
 });
 
-// node_modules/has-flag/index.js
-var require_has_flag = __commonJS((exports, module) => {
-  module.exports = (flag, argv = process.argv) => {
-    const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
-    const position = argv.indexOf(prefix + flag);
-    const terminatorPosition = argv.indexOf("--");
-    return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
-  };
-});
-
 // node_modules/supports-color/index.js
-var require_supports_color = __commonJS((exports, module) => {
-  var os = __require("os");
-  var tty = __require("tty");
-  var hasFlag = require_has_flag();
-  var { env } = process;
-  var forceColor;
-  if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false") || hasFlag("color=never")) {
-    forceColor = 0;
-  } else if (hasFlag("color") || hasFlag("colors") || hasFlag("color=true") || hasFlag("color=always")) {
-    forceColor = 1;
+var exports_supports_color = {};
+__export(exports_supports_color, {
+  default: () => supports_color_default,
+  createSupportsColor: () => createSupportsColor
+});
+import process3 from "node:process";
+import os from "node:os";
+import tty from "node:tty";
+function hasFlag(flag, argv = globalThis.Deno ? globalThis.Deno.args : process3.argv) {
+  const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
+  const position = argv.indexOf(prefix + flag);
+  const terminatorPosition = argv.indexOf("--");
+  return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
+}
+function envForceColor() {
+  if (!("FORCE_COLOR" in env)) {
+    return;
   }
-  if ("FORCE_COLOR" in env) {
-    if (env.FORCE_COLOR === "true") {
-      forceColor = 1;
-    } else if (env.FORCE_COLOR === "false") {
-      forceColor = 0;
-    } else {
-      forceColor = env.FORCE_COLOR.length === 0 ? 1 : Math.min(parseInt(env.FORCE_COLOR, 10), 3);
-    }
+  if (env.FORCE_COLOR === "true") {
+    return 1;
   }
-  function translateLevel(level) {
-    if (level === 0) {
-      return false;
-    }
-    return {
-      level,
-      hasBasic: true,
-      has256: level >= 2,
-      has16m: level >= 3
-    };
+  if (env.FORCE_COLOR === "false") {
+    return 0;
   }
-  function supportsColor(haveStream, streamIsTTY) {
-    if (forceColor === 0) {
-      return 0;
-    }
+  if (env.FORCE_COLOR.length === 0) {
+    return 1;
+  }
+  const level = Math.min(Number.parseInt(env.FORCE_COLOR, 10), 3);
+  if (![0, 1, 2, 3].includes(level)) {
+    return;
+  }
+  return level;
+}
+function translateLevel(level) {
+  if (level === 0) {
+    return false;
+  }
+  return {
+    level,
+    hasBasic: true,
+    has256: level >= 2,
+    has16m: level >= 3
+  };
+}
+function _supportsColor(haveStream, { streamIsTTY, sniffFlags = true } = {}) {
+  const noFlagForceColor = envForceColor();
+  if (noFlagForceColor !== undefined) {
+    flagForceColor = noFlagForceColor;
+  }
+  const forceColor = sniffFlags ? flagForceColor : noFlagForceColor;
+  if (forceColor === 0) {
+    return 0;
+  }
+  if (sniffFlags) {
     if (hasFlag("color=16m") || hasFlag("color=full") || hasFlag("color=truecolor")) {
       return 3;
     }
     if (hasFlag("color=256")) {
       return 2;
     }
-    if (haveStream && !streamIsTTY && forceColor === undefined) {
-      return 0;
+  }
+  if ("TF_BUILD" in env && "AGENT_NAME" in env) {
+    return 1;
+  }
+  if (haveStream && !streamIsTTY && forceColor === undefined) {
+    return 0;
+  }
+  const min = forceColor || 0;
+  if (env.TERM === "dumb") {
+    return min;
+  }
+  if (process3.platform === "win32") {
+    const osRelease = os.release().split(".");
+    if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
+      return Number(osRelease[2]) >= 14931 ? 3 : 2;
     }
-    const min = forceColor || 0;
-    if (env.TERM === "dumb") {
-      return min;
-    }
-    if (process.platform === "win32") {
-      const osRelease = os.release().split(".");
-      if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
-        return Number(osRelease[2]) >= 14931 ? 3 : 2;
-      }
-      return 1;
-    }
-    if ("CI" in env) {
-      if (["TRAVIS", "CIRCLECI", "APPVEYOR", "GITLAB_CI", "GITHUB_ACTIONS", "BUILDKITE"].some((sign) => (sign in env)) || env.CI_NAME === "codeship") {
-        return 1;
-      }
-      return min;
-    }
-    if ("TEAMCITY_VERSION" in env) {
-      return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0;
-    }
-    if (env.COLORTERM === "truecolor") {
+    return 1;
+  }
+  if ("CI" in env) {
+    if (["GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI"].some((key) => (key in env))) {
       return 3;
     }
-    if ("TERM_PROGRAM" in env) {
-      const version2 = parseInt((env.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
-      switch (env.TERM_PROGRAM) {
-        case "iTerm.app":
-          return version2 >= 3 ? 3 : 2;
-        case "Apple_Terminal":
-          return 2;
-      }
-    }
-    if (/-256(color)?$/i.test(env.TERM)) {
-      return 2;
-    }
-    if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
-      return 1;
-    }
-    if ("COLORTERM" in env) {
+    if (["TRAVIS", "APPVEYOR", "GITLAB_CI", "BUILDKITE", "DRONE"].some((sign) => (sign in env)) || env.CI_NAME === "codeship") {
       return 1;
     }
     return min;
   }
-  function getSupportLevel(stream) {
-    const level = supportsColor(stream, stream && stream.isTTY);
-    return translateLevel(level);
+  if ("TEAMCITY_VERSION" in env) {
+    return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0;
   }
-  module.exports = {
-    supportsColor: getSupportLevel,
-    stdout: translateLevel(supportsColor(true, tty.isatty(1))),
-    stderr: translateLevel(supportsColor(true, tty.isatty(2)))
+  if (env.COLORTERM === "truecolor") {
+    return 3;
+  }
+  if (env.TERM === "xterm-kitty") {
+    return 3;
+  }
+  if (env.TERM === "xterm-ghostty") {
+    return 3;
+  }
+  if (env.TERM === "wezterm") {
+    return 3;
+  }
+  if ("TERM_PROGRAM" in env) {
+    const version2 = Number.parseInt((env.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
+    switch (env.TERM_PROGRAM) {
+      case "iTerm.app": {
+        return version2 >= 3 ? 3 : 2;
+      }
+      case "Apple_Terminal": {
+        return 2;
+      }
+    }
+  }
+  if (/-256(color)?$/i.test(env.TERM)) {
+    return 2;
+  }
+  if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
+    return 1;
+  }
+  if ("COLORTERM" in env) {
+    return 1;
+  }
+  return min;
+}
+function createSupportsColor(stream, options = {}) {
+  const level = _supportsColor(stream, {
+    streamIsTTY: stream && stream.isTTY,
+    ...options
+  });
+  return translateLevel(level);
+}
+var env, flagForceColor, supportsColor, supports_color_default;
+var init_supports_color = __esm(() => {
+  ({ env } = process3);
+  if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false") || hasFlag("color=never")) {
+    flagForceColor = 0;
+  } else if (hasFlag("color") || hasFlag("colors") || hasFlag("color=true") || hasFlag("color=always")) {
+    flagForceColor = 1;
+  }
+  supportsColor = {
+    stdout: createSupportsColor({ isTTY: tty.isatty(1) }),
+    stderr: createSupportsColor({ isTTY: tty.isatty(2) })
   };
+  supports_color_default = supportsColor;
 });
 
-// node_modules/debug/src/node.js
+// node_modules/simple-oauth2/node_modules/debug/src/node.js
 var require_node = __commonJS((exports, module) => {
-  var tty = __require("tty");
+  var tty2 = __require("tty");
   var util = __require("util");
   exports.init = init;
   exports.log = log;
@@ -13456,8 +13586,8 @@ var require_node = __commonJS((exports, module) => {
   exports.destroy = util.deprecate(() => {}, "Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`.");
   exports.colors = [6, 2, 3, 4, 5, 1];
   try {
-    const supportsColor = require_supports_color();
-    if (supportsColor && (supportsColor.stderr || supportsColor).level >= 2) {
+    const supportsColor2 = (init_supports_color(), __toCommonJS(exports_supports_color));
+    if (supportsColor2 && (supportsColor2.stderr || supportsColor2).level >= 2) {
       exports.colors = [
         20,
         21,
@@ -13558,7 +13688,7 @@ var require_node = __commonJS((exports, module) => {
     return obj;
   }, {});
   function useColors() {
-    return "colors" in exports.inspectOpts ? Boolean(exports.inspectOpts.colors) : tty.isatty(process.stderr.fd);
+    return "colors" in exports.inspectOpts ? Boolean(exports.inspectOpts.colors) : tty2.isatty(process.stderr.fd);
   }
   function formatArgs(args) {
     const { namespace: name, useColors: useColors2 } = this;
@@ -13614,7 +13744,7 @@ var require_node = __commonJS((exports, module) => {
   };
 });
 
-// node_modules/debug/src/index.js
+// node_modules/simple-oauth2/node_modules/debug/src/index.js
 var require_src = __commonJS((exports, module) => {
   if (typeof process === "undefined" || process.type === "renderer" || false || process.__nwjs) {
     module.exports = require_browser();
@@ -16056,7 +16186,7 @@ var require_fast_deep_equal = __commonJS((exports, module) => {
   };
 });
 
-// node_modules/@modelcontextprotocol/sdk/node_modules/json-schema-traverse/index.js
+// node_modules/@modelcontextprotocol/sdk/node_modules/ajv/node_modules/json-schema-traverse/index.js
 var require_json_schema_traverse = __commonJS((exports, module) => {
   var traverse = module.exports = function(schema, opts, cb) {
     if (typeof opts == "function") {
@@ -16838,20 +16968,20 @@ var require_compile2 = __commonJS((exports) => {
   var validate_1 = require_validate();
 
   class SchemaEnv {
-    constructor(env) {
+    constructor(env2) {
       var _a2;
       this.refs = {};
       this.dynamicAnchors = {};
       let schema;
-      if (typeof env.schema == "object")
-        schema = env.schema;
-      this.schema = env.schema;
-      this.schemaId = env.schemaId;
-      this.root = env.root || this;
-      this.baseId = (_a2 = env.baseId) !== null && _a2 !== undefined ? _a2 : (0, resolve_1.normalizeId)(schema === null || schema === undefined ? undefined : schema[env.schemaId || "$id"]);
-      this.schemaPath = env.schemaPath;
-      this.localRefs = env.localRefs;
-      this.meta = env.meta;
+      if (typeof env2.schema == "object")
+        schema = env2.schema;
+      this.schema = env2.schema;
+      this.schemaId = env2.schemaId;
+      this.root = env2.root || this;
+      this.baseId = (_a2 = env2.baseId) !== null && _a2 !== undefined ? _a2 : (0, resolve_1.normalizeId)(schema === null || schema === undefined ? undefined : schema[env2.schemaId || "$id"]);
+      this.schemaPath = env2.schemaPath;
+      this.localRefs = env2.localRefs;
+      this.meta = env2.meta;
       this.$async = schema === null || schema === undefined ? undefined : schema.$async;
       this.refs = {};
     }
@@ -17034,15 +17164,15 @@ var require_compile2 = __commonJS((exports) => {
         baseId = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schId);
       }
     }
-    let env;
+    let env2;
     if (typeof schema != "boolean" && schema.$ref && !(0, util_1.schemaHasRulesButRef)(schema, this.RULES)) {
       const $ref = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schema.$ref);
-      env = resolveSchema.call(this, root, $ref);
+      env2 = resolveSchema.call(this, root, $ref);
     }
     const { schemaId } = this.opts;
-    env = env || new SchemaEnv({ schema, schemaId, root, baseId });
-    if (env.schema !== env.root.schema)
-      return env;
+    env2 = env2 || new SchemaEnv({ schema, schemaId, root, baseId });
+    if (env2.schema !== env2.root.schema)
+      return env2;
     return;
   }
 });
@@ -18372,8 +18502,8 @@ var require_ref2 = __commonJS((exports) => {
     schemaType: "string",
     code(cxt) {
       const { gen, schema: $ref, it } = cxt;
-      const { baseId, schemaEnv: env, validateName, opts, self } = it;
-      const { root } = env;
+      const { baseId, schemaEnv: env2, validateName, opts, self } = it;
+      const { root } = env2;
       if (($ref === "#" || $ref === "#/") && baseId === root.baseId)
         return callRootRef();
       const schOrEnv = compile_1.resolveRef.call(self, root, baseId, $ref);
@@ -18383,8 +18513,8 @@ var require_ref2 = __commonJS((exports) => {
         return callValidate(schOrEnv);
       return inlineRefSchema(schOrEnv);
       function callRootRef() {
-        if (env === root)
-          return callRef(cxt, validateName, env, env.$async);
+        if (env2 === root)
+          return callRef(cxt, validateName, env2, env2.$async);
         const rootName = gen.scopeValue("root", { ref: root });
         return callRef(cxt, (0, codegen_1._)`${rootName}.validate`, root, root.$async);
       }
@@ -18414,14 +18544,14 @@ var require_ref2 = __commonJS((exports) => {
   exports.getValidate = getValidate;
   function callRef(cxt, v, sch, $async) {
     const { gen, it } = cxt;
-    const { allErrors, schemaEnv: env, opts } = it;
+    const { allErrors, schemaEnv: env2, opts } = it;
     const passCxt = opts.passContext ? names_1.default.this : codegen_1.nil;
     if ($async)
       callAsyncRef();
     else
       callSyncRef();
     function callAsyncRef() {
-      if (!env.$async)
+      if (!env2.$async)
         throw new Error("async schema referenced by sync schema");
       const valid = gen.let("valid");
       gen.try(() => {
@@ -18604,7 +18734,6 @@ var require_limitLength = __commonJS((exports) => {
 var require_pattern = __commonJS((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
   var code_1 = require_code2();
-  var util_1 = require_util();
   var codegen_1 = require_codegen();
   var error48 = {
     message: ({ schemaCode }) => (0, codegen_1.str)`must match pattern "${schemaCode}"`,
@@ -18617,18 +18746,10 @@ var require_pattern = __commonJS((exports) => {
     $data: true,
     error: error48,
     code(cxt) {
-      const { gen, data, $data, schema, schemaCode, it } = cxt;
+      const { data, $data, schema, schemaCode, it } = cxt;
       const u = it.opts.unicodeRegExp ? "u" : "";
-      if ($data) {
-        const { regExp } = it.opts.code;
-        const regExpCode = regExp.code === "new RegExp" ? (0, codegen_1._)`new RegExp` : (0, util_1.useFunc)(gen, regExp);
-        const valid = gen.let("valid");
-        gen.try(() => gen.assign(valid, (0, codegen_1._)`${regExpCode}(${schemaCode}, ${u}).test(${data})`), () => gen.assign(valid, false));
-        cxt.fail$data((0, codegen_1._)`!${valid}`);
-      } else {
-        const regExp = (0, code_1.usePattern)(cxt, schema);
-        cxt.fail$data((0, codegen_1._)`!${regExp}.test(${data})`);
-      }
+      const regExp = $data ? (0, codegen_1._)`(new RegExp(${schemaCode}, ${u}))` : (0, code_1.usePattern)(cxt, schema);
+      cxt.fail$data((0, codegen_1._)`!${regExp}.test(${data})`);
     }
   };
   exports.default = def;
@@ -22378,7 +22499,7 @@ var require_subschema2 = __commonJS((exports) => {
   exports.extendSubschemaMode = extendSubschemaMode;
 });
 
-// node_modules/ajv-formats/node_modules/json-schema-traverse/index.js
+// node_modules/ajv-formats/node_modules/ajv/node_modules/json-schema-traverse/index.js
 var require_json_schema_traverse2 = __commonJS((exports, module) => {
   var traverse = module.exports = function(schema, opts, cb) {
     if (typeof opts == "function") {
@@ -23160,20 +23281,20 @@ var require_compile3 = __commonJS((exports) => {
   var validate_1 = require_validate2();
 
   class SchemaEnv {
-    constructor(env) {
+    constructor(env2) {
       var _a2;
       this.refs = {};
       this.dynamicAnchors = {};
       let schema;
-      if (typeof env.schema == "object")
-        schema = env.schema;
-      this.schema = env.schema;
-      this.schemaId = env.schemaId;
-      this.root = env.root || this;
-      this.baseId = (_a2 = env.baseId) !== null && _a2 !== undefined ? _a2 : (0, resolve_1.normalizeId)(schema === null || schema === undefined ? undefined : schema[env.schemaId || "$id"]);
-      this.schemaPath = env.schemaPath;
-      this.localRefs = env.localRefs;
-      this.meta = env.meta;
+      if (typeof env2.schema == "object")
+        schema = env2.schema;
+      this.schema = env2.schema;
+      this.schemaId = env2.schemaId;
+      this.root = env2.root || this;
+      this.baseId = (_a2 = env2.baseId) !== null && _a2 !== undefined ? _a2 : (0, resolve_1.normalizeId)(schema === null || schema === undefined ? undefined : schema[env2.schemaId || "$id"]);
+      this.schemaPath = env2.schemaPath;
+      this.localRefs = env2.localRefs;
+      this.meta = env2.meta;
       this.$async = schema === null || schema === undefined ? undefined : schema.$async;
       this.refs = {};
     }
@@ -23356,15 +23477,15 @@ var require_compile3 = __commonJS((exports) => {
         baseId = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schId);
       }
     }
-    let env;
+    let env2;
     if (typeof schema != "boolean" && schema.$ref && !(0, util_1.schemaHasRulesButRef)(schema, this.RULES)) {
       const $ref = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schema.$ref);
-      env = resolveSchema.call(this, root, $ref);
+      env2 = resolveSchema.call(this, root, $ref);
     }
     const { schemaId } = this.opts;
-    env = env || new SchemaEnv({ schema, schemaId, root, baseId });
-    if (env.schema !== env.root.schema)
-      return env;
+    env2 = env2 || new SchemaEnv({ schema, schemaId, root, baseId });
+    if (env2.schema !== env2.root.schema)
+      return env2;
     return;
   }
 });
@@ -24014,8 +24135,8 @@ var require_ref3 = __commonJS((exports) => {
     schemaType: "string",
     code(cxt) {
       const { gen, schema: $ref, it } = cxt;
-      const { baseId, schemaEnv: env, validateName, opts, self } = it;
-      const { root } = env;
+      const { baseId, schemaEnv: env2, validateName, opts, self } = it;
+      const { root } = env2;
       if (($ref === "#" || $ref === "#/") && baseId === root.baseId)
         return callRootRef();
       const schOrEnv = compile_1.resolveRef.call(self, root, baseId, $ref);
@@ -24025,8 +24146,8 @@ var require_ref3 = __commonJS((exports) => {
         return callValidate(schOrEnv);
       return inlineRefSchema(schOrEnv);
       function callRootRef() {
-        if (env === root)
-          return callRef(cxt, validateName, env, env.$async);
+        if (env2 === root)
+          return callRef(cxt, validateName, env2, env2.$async);
         const rootName = gen.scopeValue("root", { ref: root });
         return callRef(cxt, (0, codegen_1._)`${rootName}.validate`, root, root.$async);
       }
@@ -24056,14 +24177,14 @@ var require_ref3 = __commonJS((exports) => {
   exports.getValidate = getValidate;
   function callRef(cxt, v, sch, $async) {
     const { gen, it } = cxt;
-    const { allErrors, schemaEnv: env, opts } = it;
+    const { allErrors, schemaEnv: env2, opts } = it;
     const passCxt = opts.passContext ? names_1.default.this : codegen_1.nil;
     if ($async)
       callAsyncRef();
     else
       callSyncRef();
     function callAsyncRef() {
-      if (!env.$async)
+      if (!env2.$async)
         throw new Error("async schema referenced by sync schema");
       const valid = gen.let("valid");
       gen.try(() => {
@@ -24246,7 +24367,6 @@ var require_limitLength2 = __commonJS((exports) => {
 var require_pattern2 = __commonJS((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
   var code_1 = require_code4();
-  var util_1 = require_util2();
   var codegen_1 = require_codegen2();
   var error48 = {
     message: ({ schemaCode }) => (0, codegen_1.str)`must match pattern "${schemaCode}"`,
@@ -24259,18 +24379,10 @@ var require_pattern2 = __commonJS((exports) => {
     $data: true,
     error: error48,
     code(cxt) {
-      const { gen, data, $data, schema, schemaCode, it } = cxt;
+      const { data, $data, schema, schemaCode, it } = cxt;
       const u = it.opts.unicodeRegExp ? "u" : "";
-      if ($data) {
-        const { regExp } = it.opts.code;
-        const regExpCode = regExp.code === "new RegExp" ? (0, codegen_1._)`new RegExp` : (0, util_1.useFunc)(gen, regExp);
-        const valid = gen.let("valid");
-        gen.try(() => gen.assign(valid, (0, codegen_1._)`${regExpCode}(${schemaCode}, ${u}).test(${data})`), () => gen.assign(valid, false));
-        cxt.fail$data((0, codegen_1._)`!${valid}`);
-      } else {
-        const regExp = (0, code_1.usePattern)(cxt, schema);
-        cxt.fail$data((0, codegen_1._)`!${regExp}.test(${data})`);
-      }
+      const regExp = $data ? (0, codegen_1._)`(new RegExp(${schemaCode}, ${u}))` : (0, code_1.usePattern)(cxt, schema);
+      cxt.fail$data((0, codegen_1._)`!${regExp}.test(${data})`);
     }
   };
   exports.default = def;
@@ -29783,7 +29895,7 @@ var require_rate_limiter_flexible = __commonJS((exports, module) => {
 });
 
 // node_modules/@hono/node-server/dist/index.mjs
-import { Http2ServerRequest as Http2ServerRequest2, constants as h2constants } from "http2";
+import { Http2ServerRequest as Http2ServerRequest2 } from "http2";
 import { Http2ServerRequest } from "http2";
 import { Readable } from "stream";
 import crypto2 from "crypto";
@@ -29923,17 +30035,6 @@ var requestPrototype = {
     }
   });
 });
-Object.defineProperty(requestPrototype, Symbol.for("nodejs.util.inspect.custom"), {
-  value: function(depth, options, inspectFn) {
-    const props = {
-      method: this.method,
-      url: this.url,
-      headers: this.headers,
-      nativeRequest: this[requestCache]
-    };
-    return `Request (lightweight) ${inspectFn(props, { ...options, depth: depth == null ? null : depth - 1 })}`;
-  }
-});
 Object.setPrototypeOf(requestPrototype, Request.prototype);
 var newRequest = (incoming, defaultHostname) => {
   const req = Object.create(requestPrototype);
@@ -29999,14 +30100,15 @@ var Response2 = class _Response {
       this.#init = init;
     }
     if (typeof body === "string" || typeof body?.getReader !== "undefined" || body instanceof Blob || body instanceof Uint8Array) {
-      this[cacheKey] = [init?.status || 200, body, headers || init?.headers];
+      headers ||= init?.headers || { "content-type": "text/plain; charset=UTF-8" };
+      this[cacheKey] = [init?.status || 200, body, headers];
     }
   }
   get headers() {
     const cache = this[cacheKey];
     if (cache) {
       if (!(cache[2] instanceof Headers)) {
-        cache[2] = new Headers(cache[2] || { "content-type": "text/plain; charset=UTF-8" });
+        cache[2] = new Headers(cache[2]);
       }
       return cache[2];
     }
@@ -30033,17 +30135,6 @@ var Response2 = class _Response {
       return this[getResponseCache]()[k]();
     }
   });
-});
-Object.defineProperty(Response2.prototype, Symbol.for("nodejs.util.inspect.custom"), {
-  value: function(depth, options, inspectFn) {
-    const props = {
-      status: this.status,
-      headers: this.headers,
-      ok: this.ok,
-      nativeResponse: this[responseCache]
-    };
-    return `Response (lightweight) ${inspectFn(props, { ...options, depth: depth == null ? null : depth - 1 })}`;
-  }
 });
 Object.setPrototypeOf(Response2, GlobalResponse);
 Object.setPrototypeOf(Response2.prototype, GlobalResponse.prototype);
@@ -30115,48 +30206,6 @@ if (typeof global.crypto === "undefined") {
   global.crypto = crypto2;
 }
 var outgoingEnded = Symbol("outgoingEnded");
-var incomingDraining = Symbol("incomingDraining");
-var DRAIN_TIMEOUT_MS = 500;
-var MAX_DRAIN_BYTES = 64 * 1024 * 1024;
-var drainIncoming = (incoming) => {
-  const incomingWithDrainState = incoming;
-  if (incoming.destroyed || incomingWithDrainState[incomingDraining]) {
-    return;
-  }
-  incomingWithDrainState[incomingDraining] = true;
-  if (incoming instanceof Http2ServerRequest2) {
-    try {
-      incoming.stream?.close?.(h2constants.NGHTTP2_NO_ERROR);
-    } catch {}
-    return;
-  }
-  let bytesRead = 0;
-  const cleanup = () => {
-    clearTimeout(timer);
-    incoming.off("data", onData);
-    incoming.off("end", cleanup);
-    incoming.off("error", cleanup);
-  };
-  const forceClose = () => {
-    cleanup();
-    const socket = incoming.socket;
-    if (socket && !socket.destroyed) {
-      socket.destroySoon();
-    }
-  };
-  const timer = setTimeout(forceClose, DRAIN_TIMEOUT_MS);
-  timer.unref?.();
-  const onData = (chunk) => {
-    bytesRead += chunk.length;
-    if (bytesRead > MAX_DRAIN_BYTES) {
-      forceClose();
-    }
-  };
-  incoming.on("data", onData);
-  incoming.on("end", cleanup);
-  incoming.on("error", cleanup);
-  incoming.resume();
-};
 var handleRequestError = () => new Response(null, {
   status: 400
 });
@@ -30183,32 +30232,15 @@ var flushHeaders = (outgoing) => {
 };
 var responseViaCache = async (res, outgoing) => {
   let [status, body, header] = res[cacheKey];
-  let hasContentLength = false;
-  if (!header) {
-    header = { "content-type": "text/plain; charset=UTF-8" };
-  } else if (header instanceof Headers) {
-    hasContentLength = header.has("content-length");
+  if (header instanceof Headers) {
     header = buildOutgoingHttpHeaders(header);
-  } else if (Array.isArray(header)) {
-    const headerObj = new Headers(header);
-    hasContentLength = headerObj.has("content-length");
-    header = buildOutgoingHttpHeaders(headerObj);
-  } else {
-    for (const key in header) {
-      if (key.length === 14 && key.toLowerCase() === "content-length") {
-        hasContentLength = true;
-        break;
-      }
-    }
   }
-  if (!hasContentLength) {
-    if (typeof body === "string") {
-      header["Content-Length"] = Buffer.byteLength(body);
-    } else if (body instanceof Uint8Array) {
-      header["Content-Length"] = body.byteLength;
-    } else if (body instanceof Blob) {
-      header["Content-Length"] = body.size;
-    }
+  if (typeof body === "string") {
+    header["Content-Length"] = Buffer.byteLength(body);
+  } else if (body instanceof Uint8Array) {
+    header["Content-Length"] = body.byteLength;
+  } else if (body instanceof Blob) {
+    header["Content-Length"] = body.size;
   }
   outgoing.writeHead(status, header);
   if (typeof body === "string" || body instanceof Uint8Array) {
@@ -30320,18 +30352,14 @@ var getRequestListener = (fetchCallback, options = {}) => {
               setTimeout(() => {
                 if (!incomingEnded) {
                   setTimeout(() => {
-                    drainIncoming(incoming);
+                    incoming.destroy();
+                    outgoing.destroy();
                   });
                 }
               });
             }
           };
         }
-        outgoing.on("finish", () => {
-          if (!incomingEnded) {
-            drainIncoming(incoming);
-          }
-        });
       }
       outgoing.on("close", () => {
         const abortController = req[abortControllerKey];
@@ -30346,7 +30374,7 @@ var getRequestListener = (fetchCallback, options = {}) => {
           setTimeout(() => {
             if (!incomingEnded) {
               setTimeout(() => {
-                drainIncoming(incoming);
+                incoming.destroy();
               });
             }
           });
@@ -43923,7 +43951,7 @@ var AssertObjectSchema = custom((v) => v !== null && (typeof v === "object" || t
 var ProgressTokenSchema = union([string2(), number2().int()]);
 var CursorSchema = string2();
 var TaskCreationParamsSchema = looseObject({
-  ttl: number2().optional(),
+  ttl: union([number2(), _null3()]).optional(),
   pollInterval: number2().optional()
 });
 var TaskMetadataSchema = object({
@@ -44077,8 +44105,7 @@ var ClientCapabilitiesSchema = object({
   roots: object({
     listChanged: boolean2().optional()
   }).optional(),
-  tasks: ClientTasksCapabilitySchema.optional(),
-  extensions: record(string2(), AssertObjectSchema).optional()
+  tasks: ClientTasksCapabilitySchema.optional()
 });
 var InitializeRequestParamsSchema = BaseRequestParamsSchema.extend({
   protocolVersion: string2(),
@@ -44104,8 +44131,7 @@ var ServerCapabilitiesSchema = object({
   tools: object({
     listChanged: boolean2().optional()
   }).optional(),
-  tasks: ServerTasksCapabilitySchema.optional(),
-  extensions: record(string2(), AssertObjectSchema).optional()
+  tasks: ServerTasksCapabilitySchema.optional()
 });
 var InitializeResultSchema = ResultSchema.extend({
   protocolVersion: string2(),
@@ -44220,7 +44246,6 @@ var ResourceSchema = object({
   uri: string2(),
   description: optional(string2()),
   mimeType: optional(string2()),
-  size: optional(number2()),
   annotations: AnnotationsSchema.optional(),
   _meta: optional(looseObject({}))
 });
@@ -45356,7 +45381,7 @@ class StreamableHTTPServerTransport {
 // src/server.ts
 var import_dotenv = __toESM(require_main(), 1);
 var import_simple_oauth2 = __toESM(require_simple_oauth2(), 1);
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import http from "node:http";
 import { parse as parseUrl } from "node:url";
 
@@ -50843,10 +50868,6 @@ class Protocol {
     this._progressHandlers.clear();
     this._taskProgressTokens.clear();
     this._pendingDebouncedNotifications.clear();
-    for (const info of this._timeoutInfo.values()) {
-      clearTimeout(info.timeoutId);
-    }
-    this._timeoutInfo.clear();
     for (const controller of this._requestHandlerAbortControllers.values()) {
       controller.abort();
     }
@@ -50977,9 +50998,7 @@ class Protocol {
         await capturedTransport?.send(errorResponse);
       }
     }).catch((error48) => this._onerror(new Error(`Failed to send response: ${error48}`))).finally(() => {
-      if (this._requestHandlerAbortControllers.get(request.id) === abortController) {
-        this._requestHandlerAbortControllers.delete(request.id);
-      }
+      this._requestHandlerAbortControllers.delete(request.id);
     });
   }
   _onprogress(notification) {
@@ -52636,9 +52655,6 @@ class McpServer {
           annotations = rest.shift();
         }
       } else if (typeof firstArg === "object" && firstArg !== null) {
-        if (Object.values(firstArg).some((v) => typeof v === "object" && v !== null)) {
-          throw new Error(`Tool ${name} expected a Zod schema or ToolAnnotations, but received an unrecognized object`);
-        }
         annotations = rest.shift();
       }
     }
@@ -52731,9 +52747,6 @@ function getZodSchemaObject(schema) {
   if (isZodRawShapeCompat(schema)) {
     return objectFromShape(schema);
   }
-  if (!isZodSchemaInstance(schema)) {
-    throw new Error("inputSchema must be a Zod schema or raw shape, received an unrecognized object");
-  }
   return schema;
 }
 function promptArgumentsFromSchema(schema) {
@@ -52806,6 +52819,7 @@ var package_default = {
     "test:coverage": "vitest run --coverage",
     "test:e2e": "vitest run tests/mcpjam.integration.test.ts",
     "auth:check": "node scripts/auth-check.mjs",
+    start: "NODE_ENV=production node build/server.js",
     run: "bun run build/index.js",
     build: "bun build --target=node --format=esm --bundle --sourcemap --outdir=build ./src/index.ts ./src/server.ts",
     "start:prod": "bun run build/index.js",
@@ -55900,9 +55914,9 @@ class RaindropMCPService {
       tools: await this.listTools()
     };
   }
-  constructor() {
+  constructor(token) {
     try {
-      this.raindropService = new RaindropService;
+      this.raindropService = new RaindropService(token);
       this.server = new McpServer({
         name: "raindrop-mcp",
         version: SERVER_VERSION,
@@ -56144,7 +56158,7 @@ class RaindropMCPService {
 
 // src/server.ts
 import_dotenv.config({ quiet: true });
-var PORT = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT) : 3002;
+var PORT = parseInt(process.env.PORT || process.env.HTTP_PORT || "3002");
 var logger2 = createLogger("http");
 var activeSessions = new Map;
 var sessionMetadata = new Map;
@@ -56166,6 +56180,15 @@ var oauthClient = new import_simple_oauth2.AuthorizationCode({
   }
 });
 var transports = {};
+var registeredClients = new Map;
+var pendingOAuthSessions = new Map;
+var oauthAuthCodes = new Map;
+var oauthAccessTokens = new Map;
+function serverBaseUrl(req) {
+  const scheme = req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+  const host = req.headers.host || `localhost:${PORT}`;
+  return `${scheme}://${host}`;
+}
 function validateHostHeader(hostHeader, allowedHostnames) {
   if (!hostHeader) {
     return { ok: false, message: "Missing Host header" };
@@ -56187,35 +56210,220 @@ function validateHostHeader(hostHeader, allowedHostnames) {
 }
 var server = http.createServer(async (req, res) => {
   try {
-    const allowedHosts = [
-      "localhost",
-      "127.0.0.1",
-      "::1"
-    ];
-    if (process.env.ALLOWED_HOSTS) {
-      allowedHosts.push(...process.env.ALLOWED_HOSTS.split(","));
-    }
-    const hostValidation = validateHostHeader(req.headers.host ?? "", allowedHosts);
-    if (!hostValidation.ok) {
-      logger2.warn(`DNS rebinding attempt detected: ${hostValidation.message}`);
-      res.writeHead(403, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({
-        jsonrpc: "2.0",
-        error: {
-          code: -32603,
-          message: hostValidation.message
-        },
-        id: null
-      }));
-      return;
+    if (process.env["ENABLE_HOST_CHECK"]) {
+      const allowedHosts = [
+        "localhost",
+        "127.0.0.1",
+        "::1"
+      ];
+      if (process.env["ALLOWED_HOSTS"]) {
+        allowedHosts.push(...process.env["ALLOWED_HOSTS"].split(","));
+      }
+      const hostValidation = validateHostHeader(req.headers.host ?? "", allowedHosts);
+      if (!hostValidation.ok) {
+        logger2.warn(`DNS rebinding attempt detected: ${hostValidation.message}`);
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          jsonrpc: "2.0",
+          error: {
+            code: -32603,
+            message: hostValidation.message
+          },
+          id: null
+        }));
+        return;
+      }
     }
     const url2 = parseUrl(req.url || "", true);
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, MCP-Session-Id");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, MCP-Session-Id, Authorization");
     if (req.method === "OPTIONS") {
       res.writeHead(200);
       res.end();
+      return;
+    }
+    if (url2.pathname === "/.well-known/oauth-protected-resource" && req.method === "GET") {
+      const base = serverBaseUrl(req);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        resource: `${base}/mcp`,
+        authorization_servers: [`${base}`],
+        scopes_supported: ["mcp"],
+        bearer_methods_supported: ["header"]
+      }));
+      return;
+    }
+    if (url2.pathname === "/.well-known/oauth-authorization-server" && req.method === "GET") {
+      const base = serverBaseUrl(req);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        issuer: base,
+        authorization_endpoint: `${base}/oauth/authorize`,
+        token_endpoint: `${base}/oauth/token`,
+        registration_endpoint: `${base}/oauth/register`,
+        grant_types_supported: ["authorization_code"],
+        code_challenge_methods_supported: ["S256", "plain"],
+        response_types_supported: ["code"],
+        scopes_supported: ["mcp"],
+        token_endpoint_auth_methods_supported: ["client_secret_post", "none"]
+      }));
+      return;
+    }
+    if (url2.pathname === "/oauth/authorize" && req.method === "GET") {
+      if (!process.env.RAINDROP_CLIENT_ID) {
+        res.writeHead(500, { "Content-Type": "text/plain" });
+        res.end("RAINDROP_CLIENT_ID env var not set — configure it in manufact");
+        return;
+      }
+      const redirectUri = url2.query["redirect_uri"];
+      const clientState = url2.query["state"];
+      const codeChallenge = url2.query["code_challenge"];
+      const codeChallengeMethod = url2.query["code_challenge_method"];
+      if (!redirectUri) {
+        res.writeHead(400, { "Content-Type": "text/plain" });
+        res.end("Missing redirect_uri");
+        return;
+      }
+      const sessionId = randomUUID();
+      pendingOAuthSessions.set(sessionId, {
+        redirectUri,
+        clientState,
+        codeChallenge,
+        codeChallengeMethod
+      });
+      const base = serverBaseUrl(req);
+      const raindropRedirectUri = `${base}/auth/raindrop/callback`;
+      const authorizationUri = oauthClient.authorizeURL({
+        redirect_uri: raindropRedirectUri,
+        scope: "read write",
+        state: sessionId
+      });
+      res.writeHead(302, { Location: authorizationUri });
+      res.end();
+      return;
+    }
+    if (url2.pathname === "/oauth/register" && req.method === "POST") {
+      const chunks = [];
+      for await (const chunk of req)
+        chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+      const rawBody = Buffer.concat(chunks).toString("utf8");
+      let regBody = {};
+      try {
+        regBody = rawBody ? JSON.parse(rawBody) : {};
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid_client_metadata" }));
+        return;
+      }
+      const clientId = randomUUID();
+      const clientSecret = randomUUID();
+      const redirectUris = Array.isArray(regBody.redirect_uris) ? regBody.redirect_uris : [];
+      registeredClients.set(clientId, { clientSecret, redirectUris });
+      res.writeHead(201, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        client_id_issued_at: Math.floor(Date.now() / 1000),
+        client_secret_expires_at: 0,
+        redirect_uris: redirectUris,
+        grant_types: ["authorization_code"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "client_secret_post"
+      }));
+      return;
+    }
+    if (url2.pathname === "/oauth/token" && req.method === "POST") {
+      const chunks = [];
+      for await (const chunk of req)
+        chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+      const rawBody = Buffer.concat(chunks).toString("utf8");
+      const params = new URLSearchParams(rawBody);
+      const grantType = params.get("grant_type");
+      const code = params.get("code");
+      if (grantType !== "authorization_code" || !code) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid_grant" }));
+        return;
+      }
+      const codeEntry = oauthAuthCodes.get(code);
+      if (!codeEntry) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid_grant" }));
+        return;
+      }
+      oauthAuthCodes.delete(code);
+      const codeVerifier = params.get("code_verifier");
+      if (codeEntry.codeChallenge) {
+        if (!codeVerifier) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            error: "invalid_grant",
+            error_description: "code_verifier required"
+          }));
+          return;
+        }
+        const expectedChallenge = codeEntry.codeChallengeMethod === "S256" ? createHash("sha256").update(codeVerifier).digest("base64url") : codeVerifier;
+        if (expectedChallenge !== codeEntry.codeChallenge) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            error: "invalid_grant",
+            error_description: "PKCE verification failed"
+          }));
+          return;
+        }
+      }
+      const accessToken = randomUUID();
+      oauthAccessTokens.set(accessToken, codeEntry.raindropToken);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        access_token: accessToken,
+        token_type: "Bearer",
+        expires_in: 86400
+      }));
+      return;
+    }
+    if (url2.pathname === "/auth/raindrop/callback" && req.method === "GET") {
+      const code = url2.query.code;
+      const sessionId = url2.query.state;
+      if (!code) {
+        res.writeHead(400, { "Content-Type": "text/plain" });
+        res.end("Missing code parameter");
+        return;
+      }
+      try {
+        const base = serverBaseUrl(req);
+        const raindropRedirectUri = `${base}/auth/raindrop/callback`;
+        const tokenResult = await oauthClient.getToken({
+          code,
+          redirect_uri: raindropRedirectUri
+        });
+        const raindropToken = tokenResult.token.access_token;
+        const session = sessionId ? pendingOAuthSessions.get(sessionId) : null;
+        if (session) {
+          pendingOAuthSessions.delete(sessionId);
+          const authCode = randomUUID();
+          oauthAuthCodes.set(authCode, {
+            raindropToken,
+            codeChallenge: session.codeChallenge,
+            codeChallengeMethod: session.codeChallengeMethod
+          });
+          const callbackUrl = new URL(session.redirectUri);
+          callbackUrl.searchParams.set("code", authCode);
+          if (session.clientState)
+            callbackUrl.searchParams.set("state", session.clientState);
+          res.writeHead(302, { Location: callbackUrl.toString() });
+          res.end();
+        } else {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ access_token: raindropToken }));
+        }
+      } catch (error48) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          error: error48.message || "OAuth token exchange failed"
+        }));
+      }
       return;
     }
     if (url2.pathname === "/auth/raindrop" && req.method === "GET") {
@@ -56224,32 +56432,13 @@ var server = http.createServer(async (req, res) => {
         res.end("RAINDROP_CLIENT_ID not set");
         return;
       }
+      const base = serverBaseUrl(req);
       const authorizationUri = oauthClient.authorizeURL({
-        redirect_uri: RAINDROP_REDIRECT_URI,
+        redirect_uri: `${base}/auth/raindrop/callback`,
         scope: "read write"
       });
       res.writeHead(302, { Location: authorizationUri });
       res.end();
-      return;
-    }
-    if (url2.pathname === "/auth/raindrop/callback" && req.method === "GET") {
-      const code = url2.query.code;
-      if (!code) {
-        res.writeHead(400, { "Content-Type": "text/plain" });
-        res.end("Missing code parameter");
-        return;
-      }
-      try {
-        const tokenParams = { code, redirect_uri: RAINDROP_REDIRECT_URI };
-        const accessToken = await oauthClient.getToken(tokenParams);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ access_token: accessToken.token.access_token }));
-      } catch (error48) {
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({
-          error: error48.message || "OAuth token exchange failed"
-        }));
-      }
       return;
     }
     if (url2.pathname === "/health" && req.method === "GET") {
@@ -56313,10 +56502,33 @@ var server = http.createServer(async (req, res) => {
       try {
         const sessionId = req.headers["mcp-session-id"];
         let transport;
+        const hasEnvToken = !!process.env["RAINDROP_ACCESS_TOKEN"];
+        const hasAuthHeader = !!req.headers["authorization"];
+        if (!sessionId && !hasAuthHeader && !hasEnvToken) {
+          const base = serverBaseUrl(req);
+          res.writeHead(401, {
+            "Content-Type": "application/json",
+            "WWW-Authenticate": `Bearer realm="${base}", resource_metadata="${base}/.well-known/oauth-protected-resource"`
+          });
+          res.end(JSON.stringify({
+            jsonrpc: "2.0",
+            error: {
+              code: -32000,
+              message: "Unauthorized: authentication required"
+            },
+            id: null
+          }));
+          return;
+        }
         if (sessionId && transports[sessionId]) {
           transport = transports[sessionId];
           logger2.debug(`Reusing optimized session: ${sessionId}`);
         } else if (!sessionId && req.method === "POST" && isInitializeRequest2(body)) {
+          const authHeader = req.headers["authorization"];
+          const rawBearer = typeof authHeader === "string" && authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : undefined;
+          const bearerToken = rawBearer ? oauthAccessTokens.get(rawBearer) ?? rawBearer : undefined;
+          const sessionService = new RaindropMCPService(bearerToken);
+          const sessionMcpServer = sessionService.getServer();
           logger2.info("Creating new optimized Streamable HTTP session");
           const streamTransport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
@@ -56337,11 +56549,12 @@ var server = http.createServer(async (req, res) => {
               sessionMetadata.delete(transport.sessionId);
               logger2.info(`Optimized Streamable HTTP session cleaned up: ${transport.sessionId}`);
             }
+            sessionService.cleanup().catch(() => {});
           };
           transport.onerror = (error48) => {
             logger2.error("Streamable HTTP transport error", error48);
           };
-          await mcpServer.connect(transport);
+          await sessionMcpServer.connect(transport);
         } else {
           logger2.warn("Invalid optimized MCP request: missing session ID or invalid initialization");
           res.writeHead(400, { "Content-Type": "application/json" });
@@ -56380,9 +56593,6 @@ var server = http.createServer(async (req, res) => {
   }
 });
 app.listen = (port, cb) => server.listen(port, cb);
-var raindropMCP = new RaindropMCPService;
-var mcpServer = raindropMCP.getServer();
-var _cleanup = raindropMCP.cleanup.bind(raindropMCP);
 var serverInstance = server.listen(PORT, () => {
   logger2.info(`Raindrop MCP HTTP Server running on port ${PORT}`);
   logger2.info(`MCP Inspector: npx @modelcontextprotocol/inspector http://localhost:${PORT}/mcp`);
@@ -56412,5 +56622,5 @@ export {
   activeSessions
 };
 
-//# debugId=48E79DE144D3EC0C64756E2164756E21
+//# debugId=A2960C0825AFA80D64756E2164756E21
 //# sourceMappingURL=server.js.map

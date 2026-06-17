@@ -4,6 +4,7 @@ var __create = Object.create;
 var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 function __accessProp(key) {
   return this[key];
@@ -30,6 +31,23 @@ var __toESM = (mod, isNodeMode, target) => {
     cache.set(mod, to);
   return to;
 };
+var __toCommonJS = (from) => {
+  var entry = (__moduleCache ??= new WeakMap).get(from), desc;
+  if (entry)
+    return entry;
+  entry = __defProp({}, "__esModule", { value: true });
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (var key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(entry, key))
+        __defProp(entry, key, {
+          get: __accessProp.bind(from, key),
+          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+  }
+  __moduleCache.set(from, entry);
+  return entry;
+};
+var __moduleCache;
 var __commonJS = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
 var __returnValue = (v) => v;
 function __exportSetter(name, newValue) {
@@ -44,7 +62,74 @@ var __export = (target, all) => {
       set: __exportSetter.bind(all, name)
     });
 };
+var __esm = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
 var __require = /* @__PURE__ */ createRequire(import.meta.url);
+
+// node_modules/dotenv/package.json
+var require_package = __commonJS((exports, module) => {
+  module.exports = {
+    name: "dotenv",
+    version: "17.3.1",
+    description: "Loads environment variables from .env file",
+    main: "lib/main.js",
+    types: "lib/main.d.ts",
+    exports: {
+      ".": {
+        types: "./lib/main.d.ts",
+        require: "./lib/main.js",
+        default: "./lib/main.js"
+      },
+      "./config": "./config.js",
+      "./config.js": "./config.js",
+      "./lib/env-options": "./lib/env-options.js",
+      "./lib/env-options.js": "./lib/env-options.js",
+      "./lib/cli-options": "./lib/cli-options.js",
+      "./lib/cli-options.js": "./lib/cli-options.js",
+      "./package.json": "./package.json"
+    },
+    scripts: {
+      "dts-check": "tsc --project tests/types/tsconfig.json",
+      lint: "standard",
+      pretest: "npm run lint && npm run dts-check",
+      test: "tap run tests/**/*.js --allow-empty-coverage --disable-coverage --timeout=60000",
+      "test:coverage": "tap run tests/**/*.js --show-full-coverage --timeout=60000 --coverage-report=text --coverage-report=lcov",
+      prerelease: "npm test",
+      release: "standard-version"
+    },
+    repository: {
+      type: "git",
+      url: "git://github.com/motdotla/dotenv.git"
+    },
+    homepage: "https://github.com/motdotla/dotenv#readme",
+    funding: "https://dotenvx.com",
+    keywords: [
+      "dotenv",
+      "env",
+      ".env",
+      "environment",
+      "variables",
+      "config",
+      "settings"
+    ],
+    readmeFilename: "README.md",
+    license: "BSD-2-Clause",
+    devDependencies: {
+      "@types/node": "^18.11.3",
+      decache: "^4.6.2",
+      sinon: "^14.0.1",
+      standard: "^17.0.0",
+      "standard-version": "^9.5.0",
+      tap: "^19.2.0",
+      typescript: "^4.8.4"
+    },
+    engines: {
+      node: ">=12"
+    },
+    browser: {
+      fs: false
+    }
+  };
+});
 
 // node_modules/dotenv/lib/main.js
 var require_main = __commonJS((exports, module) => {
@@ -52,15 +137,22 @@ var require_main = __commonJS((exports, module) => {
   var path = __require("path");
   var os = __require("os");
   var crypto = __require("crypto");
+  var packageJson = require_package();
+  var version2 = packageJson.version;
   var TIPS = [
-    "◈ encrypted .env [www.dotenvx.com]",
-    "◈ secrets for agents [www.dotenvx.com]",
-    "⌁ auth for agents [www.vestauth.com]",
-    "⌘ custom filepath { path: '/custom/path/.env' }",
-    "⌘ enable debugging { debug: true }",
-    "⌘ override existing { override: true }",
-    "⌘ suppress logs { quiet: true }",
-    "⌘ multiple files { path: ['.env.local', '.env'] }"
+    "\uD83D\uDD10 encrypt with Dotenvx: https://dotenvx.com",
+    "\uD83D\uDD10 prevent committing .env to code: https://dotenvx.com/precommit",
+    "\uD83D\uDD10 prevent building .env in docker: https://dotenvx.com/prebuild",
+    "\uD83E\uDD16 agentic secret storage: https://dotenvx.com/as2",
+    "⚡️ secrets for agents: https://dotenvx.com/as2",
+    "\uD83D\uDEE1️ auth for agents: https://vestauth.com",
+    "\uD83D\uDEE0️  run anywhere with `dotenvx run -- yourcommand`",
+    "⚙️  specify custom .env file path with { path: '/custom/path/.env' }",
+    "⚙️  enable debug logging with { debug: true }",
+    "⚙️  override existing env vars with { override: true }",
+    "⚙️  suppress all logs with { quiet: true }",
+    "⚙️  write to custom object with { processEnv: myObject }",
+    "⚙️  load multiple .env files with { path: ['.env.local', '.env'] }"
   ];
   function _getRandomTip() {
     return TIPS[Math.floor(Math.random() * TIPS.length)];
@@ -127,13 +219,13 @@ var require_main = __commonJS((exports, module) => {
     return DotenvModule.parse(decrypted);
   }
   function _warn(message) {
-    console.error(`⚠ ${message}`);
+    console.error(`[dotenv@${version2}][WARN] ${message}`);
   }
   function _debug(message) {
-    console.log(`┆ ${message}`);
+    console.log(`[dotenv@${version2}][DEBUG] ${message}`);
   }
   function _log(message) {
-    console.log(`◇ ${message}`);
+    console.log(`[dotenv@${version2}] ${message}`);
   }
   function _dotenvKey(options) {
     if (options && options.DOTENV_KEY && options.DOTENV_KEY.length > 0) {
@@ -204,7 +296,7 @@ var require_main = __commonJS((exports, module) => {
     const debug = parseBoolean(process.env.DOTENV_CONFIG_DEBUG || options && options.debug);
     const quiet = parseBoolean(process.env.DOTENV_CONFIG_QUIET || options && options.quiet);
     if (debug || !quiet) {
-      _log("loading env from encrypted .env.vault");
+      _log("Loading env from encrypted .env.vault");
     }
     const parsed = DotenvModule._parseVault(options);
     let processEnv = process.env;
@@ -227,7 +319,7 @@ var require_main = __commonJS((exports, module) => {
       encoding = options.encoding;
     } else {
       if (debug) {
-        _debug("no encoding is specified (UTF-8 is used by default)");
+        _debug("No encoding is specified. UTF-8 is used by default");
       }
     }
     let optionPaths = [dotenvPath];
@@ -249,7 +341,7 @@ var require_main = __commonJS((exports, module) => {
         DotenvModule.populate(parsedAll, parsed, options);
       } catch (e) {
         if (debug) {
-          _debug(`failed to load ${path2} ${e.message}`);
+          _debug(`Failed to load ${path2} ${e.message}`);
         }
         lastError = e;
       }
@@ -266,12 +358,12 @@ var require_main = __commonJS((exports, module) => {
           shortPaths.push(relative);
         } catch (e) {
           if (debug) {
-            _debug(`failed to load ${filePath} ${e.message}`);
+            _debug(`Failed to load ${filePath} ${e.message}`);
           }
           lastError = e;
         }
       }
-      _log(`injected env (${keysCount}) from ${shortPaths.join(",")} ${dim(`// tip: ${_getRandomTip()}`)}`);
+      _log(`injecting env (${keysCount}) from ${shortPaths.join(",")} ${dim(`-- tip: ${_getRandomTip()}`)}`);
     }
     if (lastError) {
       return { parsed: parsedAll, error: lastError };
@@ -285,7 +377,7 @@ var require_main = __commonJS((exports, module) => {
     }
     const vaultPath = _vaultPath(options);
     if (!vaultPath) {
-      _warn(`you set DOTENV_KEY but you are missing a .env.vault file at ${vaultPath}`);
+      _warn(`You set DOTENV_KEY but you are missing a .env.vault file at ${vaultPath}. Did you forget to build it?`);
       return DotenvModule.configDotenv(options);
     }
     return DotenvModule._configVault(options);
@@ -2359,7 +2451,7 @@ var require_fast_deep_equal = __commonJS((exports, module) => {
   };
 });
 
-// node_modules/@modelcontextprotocol/sdk/node_modules/json-schema-traverse/index.js
+// node_modules/@modelcontextprotocol/sdk/node_modules/ajv/node_modules/json-schema-traverse/index.js
 var require_json_schema_traverse = __commonJS((exports, module) => {
   var traverse = module.exports = function(schema, opts, cb) {
     if (typeof opts == "function") {
@@ -4907,7 +4999,6 @@ var require_limitLength = __commonJS((exports) => {
 var require_pattern = __commonJS((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
   var code_1 = require_code2();
-  var util_1 = require_util();
   var codegen_1 = require_codegen();
   var error48 = {
     message: ({ schemaCode }) => (0, codegen_1.str)`must match pattern "${schemaCode}"`,
@@ -4920,18 +5011,10 @@ var require_pattern = __commonJS((exports) => {
     $data: true,
     error: error48,
     code(cxt) {
-      const { gen, data, $data, schema, schemaCode, it } = cxt;
+      const { data, $data, schema, schemaCode, it } = cxt;
       const u = it.opts.unicodeRegExp ? "u" : "";
-      if ($data) {
-        const { regExp } = it.opts.code;
-        const regExpCode = regExp.code === "new RegExp" ? (0, codegen_1._)`new RegExp` : (0, util_1.useFunc)(gen, regExp);
-        const valid = gen.let("valid");
-        gen.try(() => gen.assign(valid, (0, codegen_1._)`${regExpCode}(${schemaCode}, ${u}).test(${data})`), () => gen.assign(valid, false));
-        cxt.fail$data((0, codegen_1._)`!${valid}`);
-      } else {
-        const regExp = (0, code_1.usePattern)(cxt, schema);
-        cxt.fail$data((0, codegen_1._)`!${regExp}.test(${data})`);
-      }
+      const regExp = $data ? (0, codegen_1._)`(new RegExp(${schemaCode}, ${u}))` : (0, code_1.usePattern)(cxt, schema);
+      cxt.fail$data((0, codegen_1._)`!${regExp}.test(${data})`);
     }
   };
   exports.default = def;
@@ -8681,7 +8764,7 @@ var require_subschema2 = __commonJS((exports) => {
   exports.extendSubschemaMode = extendSubschemaMode;
 });
 
-// node_modules/ajv-formats/node_modules/json-schema-traverse/index.js
+// node_modules/ajv-formats/node_modules/ajv/node_modules/json-schema-traverse/index.js
 var require_json_schema_traverse2 = __commonJS((exports, module) => {
   var traverse = module.exports = function(schema, opts, cb) {
     if (typeof opts == "function") {
@@ -10549,7 +10632,6 @@ var require_limitLength2 = __commonJS((exports) => {
 var require_pattern2 = __commonJS((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
   var code_1 = require_code4();
-  var util_1 = require_util2();
   var codegen_1 = require_codegen2();
   var error48 = {
     message: ({ schemaCode }) => (0, codegen_1.str)`must match pattern "${schemaCode}"`,
@@ -10562,18 +10644,10 @@ var require_pattern2 = __commonJS((exports) => {
     $data: true,
     error: error48,
     code(cxt) {
-      const { gen, data, $data, schema, schemaCode, it } = cxt;
+      const { data, $data, schema, schemaCode, it } = cxt;
       const u = it.opts.unicodeRegExp ? "u" : "";
-      if ($data) {
-        const { regExp } = it.opts.code;
-        const regExpCode = regExp.code === "new RegExp" ? (0, codegen_1._)`new RegExp` : (0, util_1.useFunc)(gen, regExp);
-        const valid = gen.let("valid");
-        gen.try(() => gen.assign(valid, (0, codegen_1._)`${regExpCode}(${schemaCode}, ${u}).test(${data})`), () => gen.assign(valid, false));
-        cxt.fail$data((0, codegen_1._)`!${valid}`);
-      } else {
-        const regExp = (0, code_1.usePattern)(cxt, schema);
-        cxt.fail$data((0, codegen_1._)`!${regExp}.test(${data})`);
-      }
+      const regExp = $data ? (0, codegen_1._)`(new RegExp(${schemaCode}, ${u}))` : (0, code_1.usePattern)(cxt, schema);
+      cxt.fail$data((0, codegen_1._)`!${regExp}.test(${data})`);
     }
   };
   exports.default = def;
@@ -29631,7 +29705,7 @@ var AssertObjectSchema = custom((v) => v !== null && (typeof v === "object" || t
 var ProgressTokenSchema = union([string2(), number2().int()]);
 var CursorSchema = string2();
 var TaskCreationParamsSchema = looseObject({
-  ttl: number2().optional(),
+  ttl: union([number2(), _null3()]).optional(),
   pollInterval: number2().optional()
 });
 var TaskMetadataSchema = object({
@@ -29785,8 +29859,7 @@ var ClientCapabilitiesSchema = object({
   roots: object({
     listChanged: boolean2().optional()
   }).optional(),
-  tasks: ClientTasksCapabilitySchema.optional(),
-  extensions: record(string2(), AssertObjectSchema).optional()
+  tasks: ClientTasksCapabilitySchema.optional()
 });
 var InitializeRequestParamsSchema = BaseRequestParamsSchema.extend({
   protocolVersion: string2(),
@@ -29812,8 +29885,7 @@ var ServerCapabilitiesSchema = object({
   tools: object({
     listChanged: boolean2().optional()
   }).optional(),
-  tasks: ServerTasksCapabilitySchema.optional(),
-  extensions: record(string2(), AssertObjectSchema).optional()
+  tasks: ServerTasksCapabilitySchema.optional()
 });
 var InitializeResultSchema = ResultSchema.extend({
   protocolVersion: string2(),
@@ -29928,7 +30000,6 @@ var ResourceSchema = object({
   uri: string2(),
   description: optional(string2()),
   mimeType: optional(string2()),
-  size: optional(number2()),
   annotations: AnnotationsSchema.optional(),
   _meta: optional(looseObject({}))
 });
@@ -36042,10 +36113,6 @@ class Protocol {
     this._progressHandlers.clear();
     this._taskProgressTokens.clear();
     this._pendingDebouncedNotifications.clear();
-    for (const info of this._timeoutInfo.values()) {
-      clearTimeout(info.timeoutId);
-    }
-    this._timeoutInfo.clear();
     for (const controller of this._requestHandlerAbortControllers.values()) {
       controller.abort();
     }
@@ -36176,9 +36243,7 @@ class Protocol {
         await capturedTransport?.send(errorResponse);
       }
     }).catch((error48) => this._onerror(new Error(`Failed to send response: ${error48}`))).finally(() => {
-      if (this._requestHandlerAbortControllers.get(request.id) === abortController) {
-        this._requestHandlerAbortControllers.delete(request.id);
-      }
+      this._requestHandlerAbortControllers.delete(request.id);
     });
   }
   _onprogress(notification) {
@@ -37835,9 +37900,6 @@ class McpServer {
           annotations = rest.shift();
         }
       } else if (typeof firstArg === "object" && firstArg !== null) {
-        if (Object.values(firstArg).some((v) => typeof v === "object" && v !== null)) {
-          throw new Error(`Tool ${name} expected a Zod schema or ToolAnnotations, but received an unrecognized object`);
-        }
         annotations = rest.shift();
       }
     }
@@ -37930,9 +37992,6 @@ function getZodSchemaObject(schema) {
   if (isZodRawShapeCompat(schema)) {
     return objectFromShape(schema);
   }
-  if (!isZodSchemaInstance(schema)) {
-    throw new Error("inputSchema must be a Zod schema or raw shape, received an unrecognized object");
-  }
   return schema;
 }
 function promptArgumentsFromSchema(schema) {
@@ -38005,6 +38064,7 @@ var package_default = {
     "test:coverage": "vitest run --coverage",
     "test:e2e": "vitest run tests/mcpjam.integration.test.ts",
     "auth:check": "node scripts/auth-check.mjs",
+    start: "NODE_ENV=production node build/server.js",
     run: "bun run build/index.js",
     build: "bun build --target=node --format=esm --bundle --sourcemap --outdir=build ./src/index.ts ./src/server.ts",
     "start:prod": "bun run build/index.js",
@@ -41099,9 +41159,9 @@ class RaindropMCPService {
       tools: await this.listTools()
     };
   }
-  constructor() {
+  constructor(token) {
     try {
-      this.raindropService = new RaindropService;
+      this.raindropService = new RaindropService(token);
       this.server = new McpServer({
         name: "raindrop-mcp",
         version: SERVER_VERSION,
@@ -41388,5 +41448,5 @@ export {
   main
 };
 
-//# debugId=A99794CD1690824464756E2164756E21
+//# debugId=AFC55EE385E9B2EB64756E2164756E21
 //# sourceMappingURL=index.js.map

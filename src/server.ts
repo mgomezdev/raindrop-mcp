@@ -8,7 +8,7 @@
  */
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { config } from "dotenv";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import http from "node:http";
 import { parse as parseUrl } from "node:url";
 import { AuthorizationCode } from "simple-oauth2";
@@ -65,6 +65,10 @@ const oauthClient = new AuthorizationCode({
 const transports: Record<string, StreamableHTTPServerTransport> = {};
 
 // In-memory OAuth stores (acceptable for a personal single-user server)
+const registeredClients = new Map<
+  string,
+  { clientSecret: string; redirectUris: string[] }
+>(); // client_id → registration
 const pendingOAuthSessions = new Map<
   string,
   {
@@ -74,7 +78,14 @@ const pendingOAuthSessions = new Map<
     codeChallengeMethod?: string;
   }
 >();
-const oauthAuthCodes = new Map<string, string>(); // our code → raindrop token
+const oauthAuthCodes = new Map<
+  string,
+  {
+    raindropToken: string;
+    codeChallenge?: string;
+    codeChallengeMethod?: string;
+  }
+>(); // our code → raindrop token + PKCE data
 const oauthAccessTokens = new Map<string, string>(); // our token → raindrop token
 
 function serverBaseUrl(req: http.IncomingMessage): string {
@@ -205,10 +216,12 @@ const server = http.createServer(async (req, res) => {
           issuer: base,
           authorization_endpoint: `${base}/oauth/authorize`,
           token_endpoint: `${base}/oauth/token`,
+          registration_endpoint: `${base}/oauth/register`,
           grant_types_supported: ["authorization_code"],
           code_challenge_methods_supported: ["S256", "plain"],
           response_types_supported: ["code"],
           scopes_supported: ["mcp"],
+          token_endpoint_auth_methods_supported: ["client_secret_post", "none"],
         }),
       );
       return;
@@ -257,6 +270,45 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // RFC 7591 Dynamic Client Registration Endpoint
+    if (url.pathname === "/oauth/register" && req.method === "POST") {
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of req)
+        chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+      const rawBody = Buffer.concat(chunks).toString("utf8");
+      let regBody: any = {};
+      try {
+        regBody = rawBody ? JSON.parse(rawBody) : {};
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid_client_metadata" }));
+        return;
+      }
+
+      const clientId = randomUUID();
+      const clientSecret = randomUUID();
+      const redirectUris: string[] = Array.isArray(regBody.redirect_uris)
+        ? regBody.redirect_uris
+        : [];
+
+      registeredClients.set(clientId, { clientSecret, redirectUris });
+
+      res.writeHead(201, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          client_id_issued_at: Math.floor(Date.now() / 1000),
+          client_secret_expires_at: 0,
+          redirect_uris: redirectUris,
+          grant_types: ["authorization_code"],
+          response_types: ["code"],
+          token_endpoint_auth_method: "client_secret_post",
+        }),
+      );
+      return;
+    }
+
     // OAuth 2.0 Token Endpoint
     if (url.pathname === "/oauth/token" && req.method === "POST") {
       const chunks: Uint8Array[] = [];
@@ -273,16 +325,45 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      const raindropToken = oauthAuthCodes.get(code);
-      if (!raindropToken) {
+      const codeEntry = oauthAuthCodes.get(code);
+      if (!codeEntry) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "invalid_grant" }));
         return;
       }
       oauthAuthCodes.delete(code); // single-use
 
+      // PKCE verification (RFC 7636)
+      const codeVerifier = params.get("code_verifier");
+      if (codeEntry.codeChallenge) {
+        if (!codeVerifier) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: "invalid_grant",
+              error_description: "code_verifier required",
+            }),
+          );
+          return;
+        }
+        const expectedChallenge =
+          codeEntry.codeChallengeMethod === "S256"
+            ? createHash("sha256").update(codeVerifier).digest("base64url")
+            : codeVerifier; // plain
+        if (expectedChallenge !== codeEntry.codeChallenge) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: "invalid_grant",
+              error_description: "PKCE verification failed",
+            }),
+          );
+          return;
+        }
+      }
+
       const accessToken = randomUUID();
-      oauthAccessTokens.set(accessToken, raindropToken);
+      oauthAccessTokens.set(accessToken, codeEntry.raindropToken);
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
@@ -318,7 +399,11 @@ const server = http.createServer(async (req, res) => {
         if (session) {
           pendingOAuthSessions.delete(sessionId!);
           const authCode = randomUUID();
-          oauthAuthCodes.set(authCode, raindropToken);
+          oauthAuthCodes.set(authCode, {
+            raindropToken,
+            codeChallenge: session.codeChallenge,
+            codeChallengeMethod: session.codeChallengeMethod,
+          });
           const callbackUrl = new URL(session.redirectUri);
           callbackUrl.searchParams.set("code", authCode);
           if (session.clientState)
