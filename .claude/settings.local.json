@@ -22,7 +22,8 @@
       "Bash(pkill:*)",
       "Bash(mv:*)",
       "Bash(bun test:*)",
-      "Bash(bun:*)"
+      "Bash(bun:*)",
+      "mcp__4f8d4521-e07a-4213-93a1-6427dcf4f1f2__redeploy"
     ],
     "deny": []
   }
